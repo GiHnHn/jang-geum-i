@@ -1,0 +1,29 @@
+{
+  "type": "module",
+  "name": "my-project",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase": "^11.1.0",
+    "form-data": "^4.0.1",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.77.0",
+    "punycode": "^2.3.1"
+  },
+  "scripts": {
+    "server": "node server.js",
+    "client": "npm start --prefix front",
+    "start": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "concurrently": "^9.1.2",
+    "webpack-dev-server": "^5.2.0"
+  }
+}
