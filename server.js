@@ -5,6 +5,8 @@ import OpenAI from "openai";
 import dotenv from 'dotenv';
 import { initializeApp } from 'firebase/app';
 import { getStorage, ref, getDownloadURL, uploadBytes } from 'firebase/storage';
+import path from 'path';
+
 
 dotenv.config();
 
@@ -32,6 +34,13 @@ const firebaseConfig = {
 
 initializeApp(firebaseConfig);
 const storage = getStorage();
+
+const __dirname = path.resolve(); // __dirname 사용을 위한 설정
+app.use(express.static(path.join(__dirname, 'front', 'build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'front', 'build', 'index.html'));
+});
 
 app.post('/upload', upload.single('file'), async (req, res) => {
     try {
@@ -152,6 +161,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-app.listen(5000, () => {
-    console.log('[INFO] Server is running on http://localhost:5000');
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`[INFO] Server is running on http://localhost:${PORT}`);
 });
