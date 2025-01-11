@@ -15,11 +15,27 @@ const openai = new OpenAI({
 });
 
 const app = express();
+const allowedOrigins = [
+  'https://jang-geum-i-front.web.app', // Firebase에서 배포된 URL
+  'https://jang-geum-i.firebaseapp.com', // Firebase 기본 URL
+  'http://localhost:3000' // 로컬 개발 환경
+];
+
 app.use(cors({
-    origin: 'https://jang-geum-i-front.web.app',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: function (origin, callback) {
+      if (allowedOrigins.includes(origin) || !origin) {
+          // 요청 origin이 허용된 리스트에 있거나, origin이 없는 경우(Postman 등)
+          callback(null, true); // 요청 허용
+      } else {
+          // 허용되지 않은 origin인 경우
+          callback(new Error('Not allowed by CORS')); // 요청 차단
+      }
+  },
+  methods: ['GET', 'POST'], // 허용할 HTTP 메서드
+  allowedHeaders: ['Content-Type', 'Authorization'], // 허용할 요청 헤더
+  credentials: true, // 쿠키 사용 여부 (필요 시 설정)
 }));
+
 
 const upload = multer({ storage: multer.memoryStorage() });
 
