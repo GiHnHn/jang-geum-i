@@ -51,7 +51,7 @@ const storage = getStorage();
 
 
 
-app.post('/upload', upload.single('file'), async (req, res) => {
+app.post('/upload', async (req, res) => {
     try {
         // Firebase Storage에 업로드된 이미지 호출
         const { imageUrl } = req.body;
