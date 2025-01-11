@@ -11,9 +11,13 @@ const firebaseConfig = {
     appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
+const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL;
+
+
 // Firebase 초기화
 const firebaseApp = initializeApp(firebaseConfig);
 const storage = getStorage(firebaseApp);
+
 
 function App() {
     const [imageUrl, setImageUrl] = useState(null); // 업로드된 이미지 URL
@@ -36,17 +40,17 @@ function App() {
         setStatus("extracting"); // OpenAI 결과 추출 중
         const formData = new FormData();
         formData.append("file", file);
-
-        const response = await fetch("http://localhost:5000/upload", {
+    
+        const response = await fetch(`${BACKEND_API_URL}/upload`, { // 백엔드 URL 변경
             method: "POST",
             body: formData,
         });
-
+    
         if (!response.ok) {
             const responseText = await response.text();
             throw new Error(`HTTP Error ${response.status}: ${responseText}`);
         }
-
+    
         return await response.json();
     };
 

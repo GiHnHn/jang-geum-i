@@ -19,7 +19,7 @@
     "server": "node server.js",
     "client": "npm start --prefix front",
     "start": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "react-scripts build"
+    "build": "echo 'No build needed'"
   },
   "author": "",
   "license": "ISC",
@@ -28,4 +28,5 @@
     "concurrently": "^9.1.2",
     "webpack-dev-server": "^5.2.0"
   }
+  
 }
