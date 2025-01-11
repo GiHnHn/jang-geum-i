@@ -16,7 +16,7 @@ const openai = new OpenAI({
 
 const app = express();
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: 'https://jang-geum-i-front.web.app',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
