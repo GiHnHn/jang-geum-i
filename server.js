@@ -35,12 +35,6 @@ const firebaseConfig = {
 initializeApp(firebaseConfig);
 const storage = getStorage();
 
-const __dirname = path.resolve(); // __dirname 사용을 위한 설정
-app.use(express.static(path.join(__dirname, 'front', 'build')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'front', 'build', 'index.html'));
-});
 
 app.post('/upload', upload.single('file'), async (req, res) => {
     try {
