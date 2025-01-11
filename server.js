@@ -35,8 +35,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'], // 허용할 요청 헤더
 }));
 
-
-const upload = multer({ storage: multer.memoryStorage() });
+app.use(express.json());
 
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
@@ -49,6 +48,7 @@ const firebaseConfig = {
 
 initializeApp(firebaseConfig);
 const storage = getStorage();
+
 
 
 app.post('/upload', upload.single('file'), async (req, res) => {
