@@ -246,7 +246,9 @@ app.post('/upload', async (req, res) => {
 // -------------------------------------------------------
 //  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가 예시 ▼▼▼
 // -------------------------------------------------------
-const ttsClient = new textToSpeech.TextToSpeechClient();
+const ttsClient = new textToSpeech.TextToSpeechClient({
+    keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  });
 
 app.post('/tts', async (req, res) => {
   try {
