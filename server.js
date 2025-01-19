@@ -258,8 +258,8 @@ const initializeCredentials = () => {
 
     if (!fs.existsSync(ttsPath)) {
         fs.writeFileSync(
-        credentialsPath,
-        Buffer.from(base64ttskey, "base64").toString("utf8")
+            ttsPath,
+            Buffer.from(base64ttskey, "base64").toString("utf8")
         );
         console.log("[INFO] Google Cloud Credentials 파일 생성됨:", ttsPath);
     }
@@ -267,7 +267,7 @@ const initializeCredentials = () => {
 };
 
 
-const credentialsPath = initializeCredentials();
+const ttsPath = initializeCredentials();
 const ttsClient = new textToSpeech.TextToSpeechClient({
     keyFilename: ttsPath,
   });
