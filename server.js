@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { initializeApp } from 'firebase/app';
 import { getStorage, ref, getDownloadURL, uploadBytes } from 'firebase/storage';
 import path from 'path';
+import fs from "fs";
 
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
