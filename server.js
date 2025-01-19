@@ -246,8 +246,29 @@ app.post('/upload', async (req, res) => {
 // -------------------------------------------------------
 //  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가 예시 ▼▼▼
 // -------------------------------------------------------
+const initializeCredentials = () => {
+    const base64ttskey = process.env.GOOGLE_TTS_KEY_B64;
+
+    if (!base64ttskey) {
+        throw new Error("GCP_CREDENTIALS_B64 환경 변수가 설정되지 않았습니다.");
+    }
+
+    const ttsPath = "/tmp/tts-key.json";
+
+    if (!fs.existsSync(ttsPath)) {
+        fs.writeFileSync(
+        credentialsPath,
+        Buffer.from(base64ttskey, "base64").toString("utf8")
+        );
+        console.log("[INFO] Google Cloud Credentials 파일 생성됨:", ttsPath);
+    }
+  return ttsPath;
+};
+
+
+const credentialsPath = initializeCredentials();
 const ttsClient = new textToSpeech.TextToSpeechClient({
-    keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    keyFilename: ttsPath,
   });
 
 app.post('/tts', async (req, res) => {
