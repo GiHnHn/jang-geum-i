@@ -12,7 +12,6 @@ import fs from "fs";
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
 
-
 dotenv.config();
 
 const openai = new OpenAI({
@@ -39,9 +38,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-
-
 
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
@@ -249,42 +245,6 @@ app.post('/upload', async (req, res) => {
 });
 
 
-// ------------------------------------
-// 🔥 새로운 AI 어시스턴트 엔드포인트 추가
-// ------------------------------------
-app.post('/assistant', async (req, res) => {
-    const { question, recipe } = req.body;
-
-    if (!question || !recipe) {
-        return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
-    }
-
-    try {
-        const aiResponse = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: `너는 요리 전문가 AI야. 사용자가 요리하는 동안 도와주는 역할을 해. 
-                    현재 요리는 "${recipe.dish}"야. 
-                    재료 목록: ${recipe.ingredients.map(i => `${i.name} ${i.quantity}`).join(", ")}
-                    조리법: ${recipe.instructions.join(" / ")} 
-                    사용자의 질문에 친절하고 명확하게 답변해줘.`,
-                },
-                { role: "user", content: question }
-            ],
-        });
-
-        const answer = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
-
-        res.json({ answer });
-
-    } catch (error) {
-        console.error("[ERROR] OpenAI 어시스턴트 실패:", error.message);
-        res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
-    }
-});
-
 // -------------------------------------------------------
 //  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가 예시 ▼▼▼
 // -------------------------------------------------------
@@ -343,6 +303,42 @@ app.post('/tts', async (req, res) => {
 });
 // -------------------------------------------------------
 
+
+// ------------------------------------
+// 🔥 새로운 AI 어시스턴트 엔드포인트 추가
+// ------------------------------------
+app.post('/assistant', async (req, res) => {
+    const { question, recipe } = req.body;
+
+    if (!question || !recipe) {
+        return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
+    }
+
+    try {
+        const aiResponse = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: `너는 요리 전문가 AI야. 사용자가 요리하는 동안 도와주는 역할을 해. 
+                    현재 요리는 "${recipe.dish}"야. 
+                    재료 목록: ${recipe.ingredients.map(i => `${i.name} ${i.quantity}`).join(", ")}
+                    조리법: ${recipe.instructions.join(" / ")} 
+                    사용자의 질문에 친절하고 명확하게 답변해줘.`,
+                },
+                { role: "user", content: question }
+            ],
+        });
+
+        const answer = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
+
+        res.json({ answer });
+
+    } catch (error) {
+        console.error("[ERROR] OpenAI 어시스턴트 실패:", error.message);
+        res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
+    }
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
