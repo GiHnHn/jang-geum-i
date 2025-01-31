@@ -8,6 +8,7 @@ import { getStorage, ref, getDownloadURL, uploadBytes } from 'firebase/storage';
 import path from 'path';
 import speech from "@google-cloud/speech";
 import fs from "fs";
+import axios from 'axios';
 
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
