@@ -53,69 +53,69 @@ const firebaseConfig = {
 initializeApp(firebaseConfig);
 const storage = getStorage();
 
-// 퍼센트 조정 비율 설정
-const PERCENTAGE_CHANGE = {
-    "소금": 10,     
-    "설탕": 20,     
-    "고춧가루": 15  
-};
+// // 퍼센트 조정 비율 설정
+// const PERCENTAGE_CHANGE = {
+//     "소금": 10,     
+//     "설탕": 20,     
+//     "고춧가루": 15  
+// };
 
-// 사용자별 맛 평가 데이터 저장
-const userTasteData = {};
+// // 사용자별 맛 평가 데이터 저장
+// const userTasteData = {};
 
-// 사용자 맛 평가 저장 API
-app.post('/taste-evaluation', async (req, res) => {
-    const { user_id, sweet, spicy, salty } = req.body;
+// // 사용자 맛 평가 저장 API
+// app.post('/taste-evaluation', async (req, res) => {
+//     const { user_id, sweet, spicy, salty } = req.body;
 
-    if (!user_id || sweet == null || spicy == null || salty == null) {
-        return res.status(400).json({ error: "사용자 ID와 모든 맛 점수를 입력해주세요." });
-    }
+//     if (!user_id || sweet == null || spicy == null || salty == null) {
+//         return res.status(400).json({ error: "사용자 ID와 모든 맛 점수를 입력해주세요." });
+//     }
 
-    if (!userTasteData[user_id]) {
-        userTasteData[user_id] = { sweet: [], spicy: [], salty: [] };
-    }
+//     if (!userTasteData[user_id]) {
+//         userTasteData[user_id] = { sweet: [], spicy: [], salty: [] };
+//     }
 
-    userTasteData[user_id].sweet.push(sweet);
-    userTasteData[user_id].spicy.push(spicy);
-    userTasteData[user_id].salty.push(salty);
+//     userTasteData[user_id].sweet.push(sweet);
+//     userTasteData[user_id].spicy.push(spicy);
+//     userTasteData[user_id].salty.push(salty);
 
-    console.log(`[INFO] 사용자 ${user_id}의 평가 추가됨:`, userTasteData[user_id]);
+//     console.log(`[INFO] 사용자 ${user_id}의 평가 추가됨:`, userTasteData[user_id]);
 
-    res.json({ message: "입맛 평가가 저장되었습니다.", data: userTasteData[user_id] });
-});
+//     res.json({ message: "입맛 평가가 저장되었습니다.", data: userTasteData[user_id] });
+// });
 
-// 평균 점수 계산 함수
-const calculateAverageTaste = (user_id) => {
-    if (!userTasteData[user_id]) return { sweet: 3, spicy: 3, salty: 3 };
+// // 평균 점수 계산 함수
+// const calculateAverageTaste = (user_id) => {
+//     if (!userTasteData[user_id]) return { sweet: 3, spicy: 3, salty: 3 };
 
-    const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+//     const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
-    return {
-        sweet: avg(userTasteData[user_id].sweet).toFixed(1),
-        spicy: avg(userTasteData[user_id].spicy).toFixed(1),
-        salty: avg(userTasteData[user_id].salty).toFixed(1)
-    };
-};
+//     return {
+//         sweet: avg(userTasteData[user_id].sweet).toFixed(1),
+//         spicy: avg(userTasteData[user_id].spicy).toFixed(1),
+//         salty: avg(userTasteData[user_id].salty).toFixed(1)
+//     };
+// };
 
-// 기존 ingredients 배열을 기반으로 조미료 양 조절
-const adjust_ingredients_percentage = (ingredients, salty_score, sweet_score, spicy_score) => {
-    return ingredients.map(item => {
-        let name = item.name;
-        let quantity = parseFloat(item.quantity.replace("g", "")) || 0;
+// // 기존 ingredients 배열을 기반으로 조미료 양 조절
+// const adjust_ingredients_percentage = (ingredients, salty_score, sweet_score, spicy_score) => {
+//     return ingredients.map(item => {
+//         let name = item.name;
+//         let quantity = parseFloat(item.quantity.replace("g", "")) || 0;
 
-        if (PERCENTAGE_CHANGE[name]) {
-            let changePercentage = PERCENTAGE_CHANGE[name];
-            let scoreDifference = (name === "소금" ? (salty_score - 3) :
-                                   name === "설탕" ? (sweet_score - 3) :
-                                   (spicy_score - 3));
+//         if (PERCENTAGE_CHANGE[name]) {
+//             let changePercentage = PERCENTAGE_CHANGE[name];
+//             let scoreDifference = (name === "소금" ? (salty_score - 3) :
+//                                    name === "설탕" ? (sweet_score - 3) :
+//                                    (spicy_score - 3));
 
-            let adjustedQuantity = quantity * (1 + scoreDifference * changePercentage / 100);
-            return { name, quantity: `${adjustedQuantity.toFixed(1)}g` };
-        }
+//             let adjustedQuantity = quantity * (1 + scoreDifference * changePercentage / 100);
+//             return { name, quantity: `${adjustedQuantity.toFixed(1)}g` };
+//         }
 
-        return item;
-    });
-};
+//         return item;
+//     });
+// };
 
 // ------------------------------------------
 // 기존 /upload 라우트 (OpenAI API 호출 부분)
@@ -296,9 +296,9 @@ app.post('/upload', async (req, res) => {
 
         console.log('[INFO] OpenAI 응답 데이터:', parsedJSON);
         console.log('[INFO] 추출된 요리 이름:', dishName);
-        console.log(`[INFO] 사용자 ${user_id} 평균 점수 적용 - 단맛: ${sweet}, 매운맛: ${spicy}, 짠맛: ${salty}`);
+        // console.log(`[INFO] 사용자 ${user_id} 평균 점수 적용 - 단맛: ${sweet}, 매운맛: ${spicy}, 짠맛: ${salty}`);
 
-        ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
+        // ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
 
         // 클라이언트로 결과 전송
