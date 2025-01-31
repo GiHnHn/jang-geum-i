@@ -297,7 +297,7 @@ app.post('/upload', async (req, res) => {
         console.log('[INFO] OpenAI 응답 데이터:', parsedJSON);
         console.log('[INFO] 추출된 요리 이름:', dishName);
         console.log(`[INFO] 사용자 ${user_id} 평균 점수 적용 - 단맛: ${sweet}, 매운맛: ${spicy}, 짠맛: ${salty}`);
-        
+
         ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
 
@@ -372,7 +372,6 @@ app.get('/api/search', async (req, res) => {
         return res.status(500).json({ error: '서버 내부 오류' });
     }
 });
-
 
 
 // -------------------------------------------------------
