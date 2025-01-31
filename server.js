@@ -245,6 +245,69 @@ app.post('/upload', async (req, res) => {
     }
 });
 
+// ------------------------------------------
+// 네이버 쇼핑 검색 API 엔드포인트 추가
+// ------------------------------------------
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const searchRecordDir = path.join(process.cwd(), 'searchrecord');
+
+if (!fs.existsSync(searchRecordDir)) {
+    fs.mkdirSync(searchRecordDir, { recursive: true });
+    console.log(`[INFO] searchrecord 디렉토리를 생성했습니다.`);
+}
+
+app.get('/api/search', async (req, res) => {
+    try {
+        const { query } = req.query;
+
+        if (!query) {
+            return res.status(400).json({ error: '검색어를 입력해주세요.' });
+        }
+
+        console.log(`[INFO] "${query}" 검색 중...`);
+
+        const apiUrl = `https://openapi.naver.com/v1/search/shop?query=${encodeURIComponent(query)}`;
+
+        const response = await axios.get(apiUrl, {
+            headers: {
+                'X-Naver-Client-Id': CLIENT_ID,
+                'X-Naver-Client-Secret': CLIENT_SECRET,
+            },
+        });
+
+        if (response.status !== 200) {
+            return res.status(response.status).json({ error: '네이버 API 요청 실패' });
+        }
+
+        const filteredItems = response.data.items.filter(item => 
+            item.link.includes('smartstore.naver.com')
+        ).slice(0, 5);
+
+        if (filteredItems.length === 0) {
+            return res.status(404).json({ message: 'smartstore.naver.com 관련 제품이 없습니다.' });
+        }
+
+        console.log(`[INFO] ${filteredItems.length}개의 smartstore.naver.com 상품 검색 완료`);
+
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15);
+        const filePath = path.join(searchRecordDir, `${query}_${timestamp}.json`);
+
+        fs.writeFileSync(filePath, JSON.stringify(filteredItems, null, 2));
+
+        console.log(`[INFO] 검색 결과 저장 완료 → ${filePath}`);
+
+        return res.json({
+            topProductLink: filteredItems[0].link,
+            items: filteredItems
+        });
+
+    } catch (error) {
+        console.error('[ERROR] 네이버 API 검색 중 오류 발생:', error.message);
+        return res.status(500).json({ error: '서버 내부 오류' });
+    }
+});
+
 
 // -------------------------------------------------------
 //  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가 예시 ▼▼▼
