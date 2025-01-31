@@ -348,9 +348,16 @@ app.get('/api/search', async (req, res) => {
             return res.status(response.status).json({ error: '네이버 API 요청 실패' });
         }
 
-        const filteredItems = response.data.items.filter(item => 
-            item.link.includes('smartstore.naver.com')
-        ).slice(0, 5);
+        // ✅ 네이버 검색 결과에서 smartstore.naver.com만 필터링하고, 필요한 정보만 반환
+        const filteredItems = response.data.items
+            .filter(item => item.link.includes('smartstore.naver.com'))
+            .slice(0, 5)
+            .map(item => ({
+                title: item.title,          // 상품명
+                link: item.link,            // 상품 구매 링크
+                image: item.image,          // 상품 이미지 URL
+                price: item.lprice          // 상품 가격
+            }));
 
         if (filteredItems.length === 0) {
             return res.status(404).json({ message: 'smartstore.naver.com 관련 제품이 없습니다.' });
@@ -358,23 +365,14 @@ app.get('/api/search', async (req, res) => {
 
         console.log(`[INFO] ${filteredItems.length}개의 smartstore.naver.com 상품 검색 완료`);
 
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15);
-        const filePath = path.join(searchRecordDir, `${query}_${timestamp}.json`);
-
-        fs.writeFileSync(filePath, JSON.stringify(filteredItems, null, 2));
-
-        console.log(`[INFO] 검색 결과 저장 완료 → ${filePath}`);
-
-        return res.json({
-            topProductLink: filteredItems[0].link,
-            items: filteredItems
-        });
+        return res.json({ items: filteredItems });
 
     } catch (error) {
         console.error('[ERROR] 네이버 API 검색 중 오류 발생:', error.message);
         return res.status(500).json({ error: '서버 내부 오류' });
     }
 });
+
 
 
 // -------------------------------------------------------
