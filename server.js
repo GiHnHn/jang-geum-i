@@ -299,13 +299,13 @@ app.post('/upload', async (req, res) => {
         console.log('[INFO] 추출된 요리 이름:', dishName);
         console.log(`[INFO] 사용자 평균 점수 적용 - 단맛: ${sweet}, 매운맛: ${spicy}, 짠맛: ${salty}`);
 
-        ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
+        const ingredients_re = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
 
         // 클라이언트로 결과 전송
         res.json({
             dish: dishName,
-            ingredients,
+            ingredients_re,
             instructions
         });
     } catch (error) {
