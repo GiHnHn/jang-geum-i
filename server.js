@@ -292,20 +292,20 @@ app.post('/upload', async (req, res) => {
         }
 
         const dishName = parsedJSON?.dish_name || '요리의 이름을 찾지 못 했습니다.';
-        const ingredients = parsedJSON?.ingredients || [];
+        let ingredients = parsedJSON?.ingredients || [];
         const instructions = parsedJSON?.instructions || '제공되는 레시피가 없습니다.';
 
         console.log('[INFO] OpenAI 응답 데이터:', parsedJSON);
         console.log('[INFO] 추출된 요리 이름:', dishName);
         console.log(`[INFO] 사용자 평균 점수 적용 - 단맛: ${sweet}, 매운맛: ${spicy}, 짠맛: ${salty}`);
 
-        const ingredients_re = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
+        ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
 
         // 클라이언트로 결과 전송
         res.json({
             dish: dishName,
-            ingredients_re,
+            ingredients,
             instructions
         });
     } catch (error) {
