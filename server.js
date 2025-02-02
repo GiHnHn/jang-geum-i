@@ -14,13 +14,13 @@ import axios from 'axios';
 import textToSpeech from '@google-cloud/text-to-speech';
 
 dotenv.config();
-app.use(express.json());
-
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
 const app = express();
+app.use(express.json());
+
 const allowedOrigins = [
     'https://jang-geum-i-front.web.app',
     'https://jang-geum-i-front.firebaseapp.com',
