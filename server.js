@@ -28,7 +28,10 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (allowedOrigins.includes(origin) || !origin) {
+        const userAgent = (this && this.req && this.req.headers) ? this.req.headers['user-agent'] : "";
+        
+        // UptimeRobot 요청 허용
+        if (userAgent.includes("UptimeRobot") || allowedOrigins.includes(origin) || !origin) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
