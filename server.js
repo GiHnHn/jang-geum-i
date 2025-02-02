@@ -14,6 +14,7 @@ import axios from 'axios';
 import textToSpeech from '@google-cloud/text-to-speech';
 
 dotenv.config();
+app.use(express.json());
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -42,7 +43,11 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json());
+app.get('/health', (req, res) => {
+    res.status(200).json({ message: 'Server is running' });
+});
+
+
 
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
