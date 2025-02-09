@@ -19,7 +19,7 @@ const openai = new OpenAI({
 });
 
 const app = express();
-app.use(express.json());
+
 
 const allowedOrigins = [
     'https://jang-geum-i-front.web.app',
@@ -42,6 +42,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+app.use(express.json());
+
+
 
 app.get('/health', (req, res) => {
     res.status(200).json({ message: 'Server is running' });
@@ -470,6 +473,13 @@ app.post('/assistant', async (req, res) => {
 
         const answer = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
 
+        // 🎯 쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
+        res.cookie("assistant_active", "true", {
+            httpOnly: true,  // JS에서 접근 불가 (보안 강화)
+            secure: true,  // HTTPS에서만 전송 가능 (로컬 개발 시 false)
+            sameSite: "None",  // CORS 요청에서도 쿠키 전달 가능
+        });
+
         res.json({ answer });
 
     } catch (error) {
@@ -477,6 +487,7 @@ app.post('/assistant', async (req, res) => {
         res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
     }
 });
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
