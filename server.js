@@ -339,16 +339,18 @@ if (!fs.existsSync(searchRecordDir)) {
 
 app.get('/api/search', async (req, res) => {
     try {
-        const { query } = req.query;
+        let { query } = req.query;
 
         if (!query) {
-            return res.status(400).json({ error: '검색어를 입력해주세요.' });
+            return res.status(400).json({ error: '검색할 재료가 없습니다.' });
         }
 
         console.log(`[INFO] "${query}" 검색 중...`);
 
+        // 네이버 쇼핑 API 요청 URL
         const apiUrl = `https://openapi.naver.com/v1/search/shop?query=${encodeURIComponent(query)}`;
 
+        // 네이버 API 요청
         const response = await axios.get(apiUrl, {
             headers: {
                 'X-Naver-Client-Id': CLIENT_ID,
@@ -356,26 +358,34 @@ app.get('/api/search', async (req, res) => {
             },
         });
 
+        console.log("[DEBUG] 네이버 API 응답 상태코드:", response.status);
+        console.log("[DEBUG] 네이버 API 응답 데이터:", response.data);
+
         if (response.status !== 200) {
             return res.status(response.status).json({ error: '네이버 API 요청 실패' });
         }
 
-        // ✅ 네이버 검색 결과에서 smartstore.naver.com만 필터링하고, 필요한 정보만 반환
-        const filteredItems = response.data.items
+        let filteredItems = response.data.items
             .filter(item => item.link.includes('smartstore.naver.com'))
-            .slice(0, 5)
+            .slice(0, 5) // 최대 5개만 반환
             .map(item => ({
-                title: item.title,          // 상품명
-                link: item.link,            // 상품 구매 링크
-                image: item.image,          // 상품 이미지 URL
-                price: item.lprice          // 상품 가격
+                title: item.title,  // 상품명
+                link: item.link,    // 상품 구매 링크
+                image: item.image,  // 상품 이미지
+                price: item.lprice  // 가격
             }));
 
+        // smartstore.naver.com 결과가 없을 경우, 전체 결과에서 일부 가져오기
         if (filteredItems.length === 0) {
-            return res.status(404).json({ message: 'smartstore.naver.com 관련 제품이 없습니다.' });
+            filteredItems = response.data.items.slice(0, 5).map(item => ({
+                title: item.title,
+                link: item.link,
+                image: item.image,
+                price: item.lprice
+            }));
         }
 
-        console.log(`[INFO] ${filteredItems.length}개의 smartstore.naver.com 상품 검색 완료`);
+        console.log(`[INFO] ${filteredItems.length}개의 상품 검색 완료`);
 
         return res.json({ items: filteredItems });
 
