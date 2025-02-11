@@ -347,47 +347,43 @@ app.get('/api/search', async (req, res) => {
 
         console.log(`[INFO] "${query}" 검색 중...`);
 
-        // 네이버 쇼핑 API 요청 URL
-        const apiUrl = `https://openapi.naver.com/v1/search/shop?query=${encodeURIComponent(query)}`;
+        // ✅ 검색어를 여러 개 처리할 수 있도록 "|" 구분자를 사용
+        const searchQueries = query.split("|").map(q => encodeURIComponent(q.trim()));
+        const searchResults = [];
 
-        // 네이버 API 요청
-        const response = await axios.get(apiUrl, {
-            headers: {
-                'X-Naver-Client-Id': CLIENT_ID,
-                'X-Naver-Client-Secret': CLIENT_SECRET,
-            },
-        });
+        for (let searchQuery of searchQueries) {
+            const apiUrl = `https://openapi.naver.com/v1/search/shop?query=${searchQuery}`;
 
-        console.log("[DEBUG] 네이버 API 응답 상태코드:", response.status);
-        console.log("[DEBUG] 네이버 API 응답 데이터:", response.data);
+            const response = await axios.get(apiUrl, {
+                headers: {
+                    'X-Naver-Client-Id': CLIENT_ID,
+                    'X-Naver-Client-Secret': CLIENT_SECRET,
+                },
+            });
 
-        if (response.status !== 200) {
-            return res.status(response.status).json({ error: '네이버 API 요청 실패' });
+            console.log(`[DEBUG] 네이버 API 응답 (${searchQuery}):`, response.status);
+
+            if (response.status !== 200) continue;
+
+            const filteredItems = response.data.items
+                .filter(item => item.link.includes('smartstore.naver.com'))
+                .slice(0, 5)
+                .map(item => ({
+                    title: item.title,
+                    link: item.link,
+                    image: item.image,
+                    price: item.lprice
+                }));
+
+            searchResults.push(...filteredItems);
         }
 
-        let filteredItems = response.data.items
-            .filter(item => item.link.includes('smartstore.naver.com'))
-            .slice(0, 5) // 최대 5개만 반환
-            .map(item => ({
-                title: item.title,  // 상품명
-                link: item.link,    // 상품 구매 링크
-                image: item.image,  // 상품 이미지
-                price: item.lprice  // 가격
-            }));
-
-        // smartstore.naver.com 결과가 없을 경우, 전체 결과에서 일부 가져오기
-        if (filteredItems.length === 0) {
-            filteredItems = response.data.items.slice(0, 5).map(item => ({
-                title: item.title,
-                link: item.link,
-                image: item.image,
-                price: item.lprice
-            }));
+        if (searchResults.length === 0) {
+            return res.json({ items: [] });
         }
 
-        console.log(`[INFO] ${filteredItems.length}개의 상품 검색 완료`);
-
-        return res.json({ items: filteredItems });
+        console.log(`[INFO] ${searchResults.length}개의 상품 검색 완료`);
+        return res.json({ items: searchResults });
 
     } catch (error) {
         console.error('[ERROR] 네이버 API 검색 중 오류 발생:', error.message);
