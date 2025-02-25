@@ -5,9 +5,11 @@ import {
   Route,
   useNavigate,
   useLocation,
+  Link
 } from "react-router-dom";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { initializeApp } from "firebase/app";
+import axios from 'axios';
 
 
 const firebaseConfig = {
@@ -19,7 +21,8 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL;
+const BACKEND_API_URL = 'https://jang-geum-i-backend.onrender.com';
+
 
 // Firebase 초기화
 const firebaseApp = initializeApp(firebaseConfig);
@@ -34,7 +37,6 @@ function MainApp() {
   const [result, setResult] = useState(null); // OpenAI API 결과
   const [status, setStatus] = useState("idle"); // 현재 상태: idle, uploading, extracting, complete
   const [error, setError] = useState(null); // 에러 메시지
-
   const navigate = useNavigate();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 파일 크기 제한: 5MB
@@ -128,7 +130,29 @@ function MainApp() {
     navigate("/cooking", { state: { recipe: result } });
   };
 
+  const handleNavigateToPurchase = () => {
+    if (!result) {
+        alert("레시피를 먼저 검색해주세요.");
+        return;
+    }
+    navigate("/purchase", { state: { recipe: result } }); // 📌 3번 화면(구매 페이지)으로 이동할 때 recipe 데이터 전달
+  };
+
+  // ✅ 버튼 스타일 추가
+const styles = {
+  authButton: {
+    padding: "8px 15px",
+    fontSize: "0.9rem",
+    backgroundColor: "#4CAF50",
+    color: "white",
+    borderRadius: "5px",
+    textDecoration: "none",
+    cursor: "pointer",
+  },
+};
+
   return (
+    
     <div
       style={{
         fontFamily: "Arial, sans-serif",
@@ -248,6 +272,15 @@ function MainApp() {
         )}
       </div>
 
+      <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+        <Link to="/login" style={styles.authButton}>로그인</Link>
+        <Link to="/register" style={styles.authButton}>회원가입</Link>
+      </div>
+
+
+       {/* 여기부터 수정사항 */}
+       {/* 여기부터 수정사항 */}
+       {/* 여기부터 수정사항 */}
       {status === "complete" && result && (
         <div
           style={{
@@ -349,6 +382,109 @@ function MainApp() {
   );
 }
 
+function RegisterPage() {
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+
+    try {
+      const response = await axios.post(`${BACKEND_API_URL}/api/users/register`, formData);
+      setMessage(response.data.message);
+      alert("✅ 회원가입이 완료되었습니다!");
+      navigate("/"); // 회원가입 후 메인 화면으로 이동
+    } catch (error) {
+      setMessage(error.response?.data?.error || "❌ 회원가입 실패");
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.title}>회원가입</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="text"
+          name="username"
+          placeholder="사용자명"
+          value={formData.username}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="이메일"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="비밀번호"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <button type="submit" style={styles.button}>회원가입 완료</button>
+      </form>
+      {message && <p style={styles.message}>{message}</p>}
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    textAlign: "center",
+    maxWidth: "400px",
+    margin: "50px auto",
+    padding: "20px",
+    border: "1px solid #ddd",
+    borderRadius: "10px",
+    backgroundColor: "#fff",
+  },
+  title: {
+    marginBottom: "20px",
+  },
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  input: {
+    padding: "10px",
+    fontSize: "1rem",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+  },
+  button: {
+    padding: "10px",
+    fontSize: "1rem",
+    backgroundColor: "#4CAF50",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+  },
+  message: {
+    marginTop: "10px",
+    color: "red",
+  },
+};
 
 function PurchasePage() {
     const location = useLocation();
@@ -472,8 +608,11 @@ function PurchasePage() {
           )}
       </div>
   );
-}
+} 
 
+{/* 여기까지 수정사항 */}
+{/* 여기까지 수정사항 */}
+{/* 여기까지 수정사항 */}
 
 
 function CookingPage() {
@@ -481,11 +620,13 @@ function CookingPage() {
   const navigate = useNavigate();
   const recipe = location.state?.recipe;
   const [currentStep, setCurrentStep] = useState(0);
+  const [isAssistantOn, setIsAssistantOn] = useState(false); // AI 어시스턴트 ON/OFF 상태
+  const [userQuestion, setUserQuestion] = useState("");
 
-  const audioRef = useRef(null); // 현재 오디오 객체 참조
-  const abortControllerRef = useRef(null); // AbortController 참조
+  const audioRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // base64 → Blob 변환 함수
+  // Base64 → Blob 변환 함수
   const b64toBlob = (b64Data, contentType) => {
     const byteChars = atob(b64Data);
     const byteNums = new Array(byteChars.length);
@@ -496,82 +637,140 @@ function CookingPage() {
     return new Blob([byteArray], { type: contentType });
   };
 
-  // TTS 호출 및 오디오 재생
-  const playCloudTTS = useCallback(
-    async (text) => {
-      try {
-        // 기존 재생 중인 오디오 중단
+  // AI 어시스턴트 TTS 음성 출력
+  const playCloudTTS = useCallback(async (text) => {
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) throw new Error(`TTS API Error: ${response.status}`);
+
+      const data = await response.json();
+      if (data.audioBase64) {
+        const audioBlob = b64toBlob(data.audioBase64, "audio/mp3");
+        const audioUrl = URL.createObjectURL(audioBlob);
+
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
-          audioRef.current = null;
         }
 
-        // 이전 TTS 요청 중단
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        await audio.play();
+      }
+    } catch (err) {
+      console.error("TTS 오류:", err);
+    }
+  }, []);
 
-        const abortController = new AbortController();
-        abortControllerRef.current = abortController;
+  // AI 어시스턴트 응답 요청
+  const startListening = () => {
+    if (!recognitionRef.current) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.lang = "ko-KR"; // 한국어 설정
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.continuous = true; // 🎯 계속 듣기 모드 활성화
+        recognitionRef.current.maxAlternatives = 1;
 
-        // TTS 요청
-        const response = await fetch(`${BACKEND_API_URL}/tts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-          signal: abortController.signal, // AbortController 사용
+        recognitionRef.current.onresult = (event) => {
+            const voiceText = event.results[0][0].transcript.trim();
+            console.log("🎤 음성 입력:", voiceText); // 인식된 텍스트 확인용
+
+            if (voiceText.includes("다음 단계")) {
+                handleNextStep();
+            } else if (voiceText.includes("이전 단계")) {
+                handlePreviousStep();
+            } else {
+                setUserQuestion(voiceText);
+                fetchAIResponse();
+            }
+        };
+
+        recognitionRef.current.onerror = (event) => {
+            console.error("🚨 음성 인식 오류:", event.error);
+        };
+
+        // 🎯 음성 인식이 끝났을 때 자동으로 다시 시작
+        recognitionRef.current.onend = () => {
+            console.log("🔄 음성 인식이 종료됨, 다시 시작합니다...");
+            if (isAssistantOn) {
+                recognitionRef.current.start();
+            }
+        };
+    }
+
+    recognitionRef.current.start();
+  };
+
+  const fetchAIResponse = async () => {
+    if (!userQuestion.trim()) return;
+
+    console.log("AI에게 보낸 질문:", userQuestion);
+
+    try {
+        const response = await fetch(`${BACKEND_API_URL}/assistant`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ question: userQuestion }),
         });
 
-        if (!response.ok) {
-          throw new Error(`TTS API Error: ${response.status}`);
-        }
-
         const data = await response.json();
-        if (data.audioBase64) {
-          const audioBlob = b64toBlob(data.audioBase64, "audio/mp3");
-          const audioUrl = URL.createObjectURL(audioBlob);
+        console.log("🗣 AI 응답:", data.answer);
 
-          const audio = new Audio(audioUrl);
-          audioRef.current = audio; // Audio 객체 참조 저장
+        playCloudTTS(data.answer).then(() => {
+            console.log("🎤 AI 응답 후 음성 인식 다시 시작...");
+            if (isAssistantOn) {
+                recognitionRef.current.start(); // 🎯 AI 응답 후 다시 마이크 활성화
+            }
+        });
 
-          await audio.play();
-        }
-      } catch (err) {
-        if (err.name === "AbortError") {
-          console.log("TTS 요청이 중단되었습니다.");
-        } else {
-          console.error("TTS 재생 오류:", err.message || err);
-        }
-      }
-    },
-    [] // 의존성 없음
-  );
+    } catch (error) {
+        console.error("🚨 AI 응답 오류:", error);
+        playCloudTTS("AI 응답을 가져올 수 없습니다.").then(() => {
+            if (isAssistantOn) {
+                recognitionRef.current.start();
+            }
+        });
+    }
+  };
 
-  // 단계 변경 시 음성 재생
+
+
+  // AI 어시스턴트 버튼 클릭 시 ON/OFF
+  const toggleAssistant = () => {
+    if (isAssistantOn) {
+        console.log("🛑 AI 어시스턴트 OFF: 음성 인식 중단");
+        recognitionRef.current?.stop();
+    } else {
+        console.log("✅ AI 어시스턴트 ON: 음성 인식 시작");
+        startListening();
+    }
+    setIsAssistantOn((prev) => !prev);
+  };
+
+
+  // 단계 변경 시 음성 안내
   useEffect(() => {
     if (!recipe || !recipe.instructions) return;
-
     const currentText = recipe.instructions[currentStep];
-    if (currentText) {
-      playCloudTTS(currentText);
-    }
+    if (currentText) playCloudTTS(currentText);
   }, [currentStep, recipe, playCloudTTS]);
 
-  // Cleanup: 컴포넌트 언마운트 시 모든 요청 및 재생 중단
+  // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      if (recognitionRef.current) recognitionRef.current.stop();
+      if (audioRef.current) audioRef.current.pause();
     };
   }, []);
 
-  // 레시피가 없으면 홈으로 돌아가기
+  // 레시피가 없으면 홈으로 이동
   if (!recipe) {
     return (
       <div style={{ textAlign: "center", marginTop: "50px" }}>
@@ -581,6 +780,7 @@ function CookingPage() {
     );
   }
 
+  // 단계 이동 핸들러
   const handleNextStep = () => {
     if (!recipe.instructions) return;
     if (currentStep < recipe.instructions.length - 1) {
@@ -600,57 +800,25 @@ function CookingPage() {
   };
 
   return (
-    <div
-      style={{
-        textAlign: "center",
-        fontFamily: "Arial, sans-serif",
-        backgroundColor: "#f9f9f9",
-        minHeight: "100vh",
-        paddingTop: "50px",
-      }}
-    >
+    <div style={{ textAlign: "center", fontFamily: "Arial, sans-serif", backgroundColor: "#f9f9f9", minHeight: "100vh", paddingTop: "50px" }}>
       <h1 style={{ color: "#4CAF50", marginBottom: "20px" }}>{recipe.dish}</h1>
 
       {recipe.instructions && (
         <div style={{ marginBottom: "20px" }}>
-          <h3>
-            단계 {currentStep + 1} / {recipe.instructions.length}
-          </h3>
+          <h3>단계 {currentStep + 1} / {recipe.instructions.length}</h3>
           <p style={{ marginTop: "10px" }}>{recipe.instructions[currentStep]}</p>
         </div>
       )}
 
       <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
-        <button
-          onClick={handlePreviousStep}
-          style={{
-            padding: "10px 15px",
-            fontSize: "1rem",
-            backgroundColor: "#ccc",
-            color: "#333",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          이전 단계
-        </button>
-
-        <button
-          onClick={handleNextStep}
-          style={{
-            padding: "10px 15px",
-            fontSize: "1rem",
-            backgroundColor: "#4CAF50",
-            color: "#fff",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          다음 단계
-        </button>
+        <button onClick={handlePreviousStep} style={{ padding: "10px 15px", fontSize: "1rem", backgroundColor: "#ccc", color: "#333", border: "none", borderRadius: "5px", cursor: "pointer" }}>이전 단계</button>
+        <button onClick={handleNextStep} style={{ padding: "10px 15px", fontSize: "1rem", backgroundColor: "#4CAF50", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>다음 단계</button>
       </div>
+
+      {/* AI 어시스턴트 토글 버튼 */}
+      <button onClick={toggleAssistant} style={{ marginTop: "20px", padding: "10px 15px", fontSize: "1rem", backgroundColor: isAssistantOn ? "red" : "#4CAF50", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+        {isAssistantOn ? "AI 어시스턴트 끄기" : "AI 어시스턴트 켜기"}
+      </button>
     </div>
   );
 }
@@ -663,7 +831,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<MainApp />} />
+        <Route path="/purchase" element={<PurchasePage />} />
         <Route path="/cooking" element={<CookingPage />} />
+        <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </Router>
   );

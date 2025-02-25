@@ -9,6 +9,8 @@ import path from 'path';
 import speech from "@google-cloud/speech";
 import fs from "fs";
 import axios from 'axios';
+import userRoutes from './routes/userRoutes.js';
+import './db.js';  // ✅ MongoDB 연결을 위해 db.js 불러오기
 
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
@@ -324,6 +326,9 @@ app.post('/upload', async (req, res) => {
         res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
     }
 });
+
+// ✅ 회원가입 API 라우트 추가
+app.use('/api/users/register', userRoutes);
 
 // ------------------------------------------
 // 네이버 쇼핑 검색 API 엔드포인트 추가
