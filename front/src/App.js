@@ -37,6 +37,7 @@ function MainApp() {
   const [result, setResult] = useState(null); // OpenAI API 결과
   const [status, setStatus] = useState("idle"); // 현재 상태: idle, uploading, extracting, complete
   const [error, setError] = useState(null); // 에러 메시지
+  const [user, setUser] = useState(null); // 사용자 로그인 상태
   const navigate = useNavigate();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 파일 크기 제한: 5MB
@@ -137,6 +138,15 @@ function MainApp() {
     }
     navigate("/purchase", { state: { recipe: result } }); // 📌 3번 화면(구매 페이지)으로 이동할 때 recipe 데이터 전달
   };
+
+  // 로그 아웃 기능 추가
+  const handleLogout = () => {
+    localStorage.removeItem("username");
+    setUser(null);
+    alert("✅ 로그아웃 되었습니다.");
+    navigate("/");
+  };
+
 
   // ✅ 버튼 스타일 추가
 const styles = {
@@ -272,9 +282,19 @@ const styles = {
         )}
       </div>
 
-      <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-        <Link to="/login" style={styles.authButton}>로그인</Link>
-        <Link to="/register" style={styles.authButton}>회원가입</Link>
+      {/* ✅ 사용자명이 있으면 우측 상단에 표시 */}
+      <div style={{ position: "absolute", top: "10px", right: "20px" }}>
+        {user ? (
+          <>
+            <span style={{ marginRight: "10px", fontWeight: "bold", color: "#4CAF50" }}>{user}님</span>
+            <button onClick={handleLogout} style={styles.logoutButton}>로그아웃</button>
+          </>
+        ) : (
+          <div>
+            <Link to="/login" style={styles.authButton}>로그인</Link>
+            <Link to="/register" style={styles.authButton}>회원가입</Link>
+          </div>
+        )}
       </div>
 
 
@@ -389,7 +409,7 @@ function RegisterPage() {
     password: "",
   });
   const [message, setMessage] = useState("");
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // ✅ 페이지 이동을 위한 useNavigate 추가
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -401,18 +421,19 @@ function RegisterPage() {
 
     try {
       const response = await axios.post(`${BACKEND_API_URL}/api/users/register`, formData, { withCredentials: true });
+
       if (response.status === 201) {
         alert("✅ 회원가입이 완료되었습니다!");
-        navigate("/");
-    } else {
+        navigate("/"); // ✅ 회원가입 후 초기 화면으로 이동
+      } else {
         console.error("🚨 서버 응답 오류:", response.data);
         setMessage(response.data.error || "❌ 회원가입 실패");
-    }
-  } catch (error) {
+      }
+    } catch (error) {
       console.error("🚨 회원가입 요청 실패:", error.response?.data || error.message);
       setMessage(error.response?.data?.error || "❌ 서버 오류로 회원가입 실패");
-  }
-};
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -445,13 +466,23 @@ function RegisterPage() {
           required
           style={styles.input}
         />
-        <button type="submit" style={styles.button}>회원가입 완료</button>
+
+        {/* ✅ 버튼 영역을 두 개로 나눔 */}
+        <div style={styles.buttonContainer}>
+          <button type="button" onClick={() => navigate("/")} style={styles.backButton}>
+            뒤로 가기
+          </button>
+          <button type="submit" style={styles.submitButton}>
+            회원가입 완료
+          </button>
+        </div>
       </form>
       {message && <p style={styles.message}>{message}</p>}
     </div>
   );
 }
 
+// ✅ 추가된 스타일
 const styles = {
   container: {
     textAlign: "center",
@@ -476,7 +507,23 @@ const styles = {
     border: "1px solid #ccc",
     borderRadius: "5px",
   },
-  button: {
+  buttonContainer: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "10px",
+  },
+  backButton: {
+    padding: "10px",
+    fontSize: "1rem",
+    backgroundColor: "#888",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    flex: "1",
+    marginRight: "5px",
+  },
+  submitButton: {
     padding: "10px",
     fontSize: "1rem",
     backgroundColor: "#4CAF50",
@@ -484,12 +531,83 @@ const styles = {
     border: "none",
     borderRadius: "5px",
     cursor: "pointer",
+    flex: "1",
+    marginLeft: "5px",
   },
   message: {
     marginTop: "10px",
     color: "red",
   },
 };
+
+function LoginPage({ setUser }) {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+
+    try {
+      const response = await axios.post(`${BACKEND_API_URL}/api/users/login`, formData, { withCredentials: true });
+
+      if (response.status === 200) {
+        const { username } = response.data;
+        setUser(username); // 🔥 메인 화면에 사용자명 표시
+        localStorage.setItem("username", username); // 🔥 사용자명 저장
+        alert("✅ 로그인 성공!");
+        navigate("/"); // ✅ 로그인 후 메인 화면으로 이동
+      } else {
+        setMessage(response.data.error || "❌ 로그인 실패");
+      }
+    } catch (error) {
+      console.error("🚨 로그인 요청 실패:", error.response?.data || error.message);
+      setMessage(error.response?.data?.error || "❌ 이메일 또는 비밀번호가 올바르지 않습니다.");
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.title}>로그인</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="email"
+          name="email"
+          placeholder="이메일"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="비밀번호"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          style={styles.input}
+        />
+
+        {/* ✅ 버튼 영역 */}
+        <div style={styles.buttonContainer}>
+          <button type="button" onClick={() => navigate("/")} style={styles.backButton}>
+            뒤로 가기
+          </button>
+          <button type="submit" style={styles.submitButton}>
+            로그인
+          </button>
+        </div>
+      </form>
+      {message && <p style={styles.message}>{message}</p>}
+    </div>
+  );
+}
 
 function PurchasePage() {
     const location = useLocation();
@@ -832,10 +950,13 @@ function CookingPage() {
 
 
 function App() {
+  const [user, setUser] = useState(null);
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainApp />} />
+        <Route path="/" element={<MainApp user={user} setUser={setUser} />} />
+        <Route path="/login" element={<LoginPage setUser={setUser} />} />
         <Route path="/purchase" element={<PurchasePage />} />
         <Route path="/cooking" element={<CookingPage />} />
         <Route path="/register" element={<RegisterPage />} />
