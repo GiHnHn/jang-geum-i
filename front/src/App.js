@@ -400,14 +400,19 @@ function RegisterPage() {
     setMessage("");
 
     try {
-      const response = await axios.post(`${BACKEND_API_URL}/api/users/register`, formData);
-      setMessage(response.data.message);
-      alert("✅ 회원가입이 완료되었습니다!");
-      navigate("/"); // 회원가입 후 메인 화면으로 이동
-    } catch (error) {
-      setMessage(error.response?.data?.error || "❌ 회원가입 실패");
+      const response = await axios.post(`${BACKEND_API_URL}/api/users/register`, formData, { withCredentials: true });
+      if (response.status === 201) {
+        alert("✅ 회원가입이 완료되었습니다!");
+        navigate("/");
+    } else {
+        console.error("🚨 서버 응답 오류:", response.data);
+        setMessage(response.data.error || "❌ 회원가입 실패");
     }
-  };
+  } catch (error) {
+      console.error("🚨 회원가입 요청 실패:", error.response?.data || error.message);
+      setMessage(error.response?.data?.error || "❌ 서버 오류로 회원가입 실패");
+  }
+};
 
   return (
     <div style={styles.container}>

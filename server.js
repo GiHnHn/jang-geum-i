@@ -328,7 +328,7 @@ app.post('/upload', async (req, res) => {
 });
 
 // ✅ 회원가입 API 라우트 추가
-app.use('/api/users/register', userRoutes);
+app.use('/api/users', userRoutes);
 
 // ------------------------------------------
 // 네이버 쇼핑 검색 API 엔드포인트 추가
