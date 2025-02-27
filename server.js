@@ -11,6 +11,7 @@ import fs from "fs";
 import axios from 'axios';
 import userRoutes from './routes/userRoutes.js';
 import './db.js';  // ✅ MongoDB 연결을 위해 db.js 불러오기
+import cookieParser from 'cookie-parser';
 
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
@@ -45,7 +46,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
-
+app.use(cookieParser()); // ✅ 쿠키 파싱 미들웨어 추가
 
 
 app.get('/health', (req, res) => {

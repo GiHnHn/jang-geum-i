@@ -68,6 +68,18 @@ function MainApp() {
     return await response.json();
   };
 
+  useEffect(() => {
+    async function fetchUser() {
+        try {
+            const response = await axios.get(`${BACKEND_API_URL}/api/users/me`, { withCredentials: true });
+            setUser(response.data.username);
+        } catch (error) {
+            console.log("로그인 정보 없음");
+        }
+    }
+    fetchUser();
+}, []);
+
   // 파일 업로드 및 텍스트/이미지 처리
   const handleUpload = async (file) => {
     setError(null);
@@ -140,13 +152,11 @@ function MainApp() {
   };
 
   // 로그 아웃 기능 추가
-  const handleLogout = () => {
-    localStorage.removeItem("username");
+  const handleLogout = async () => {
+    await axios.post(`${BACKEND_API_URL}/api/users/logout`, {}, { withCredentials: true });
     setUser(null);
-    alert("✅ 로그아웃 되었습니다.");
     navigate("/");
-  };
-
+};
 
   // ✅ 버튼 스타일 추가
 const styles = {
@@ -955,7 +965,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainApp user={user} setUser={setUser} />} />
+        <Route path="/" element={<MainApp user={user} />} />
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
         <Route path="/purchase" element={<PurchasePage />} />
         <Route path="/cooking" element={<CookingPage />} />

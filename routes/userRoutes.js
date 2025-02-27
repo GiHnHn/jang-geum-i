@@ -1,8 +1,11 @@
 import express from 'express';
 import User from '../models/User.js';
-import bcryptjs from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
+
+// JWT Secret Key
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ✅ 회원가입 API
 router.post('/register', async (req, res) => {
@@ -32,34 +35,62 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// ✅ 로그인 API
+// ✅ 로그인 API (JWT 발급)
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ error: "이메일과 비밀번호를 입력해주세요." });
-        }
-
         // 이메일 확인
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ error: "존재하지 않는 이메일입니다." });
+            return res.status(401).json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." });
         }
 
-        // 비밀번호 검증
-        const isMatch = await bcryptjs.compare(password, user.password);
+        // 비밀번호 확인
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ error: "비밀번호가 올바르지 않습니다." });
+            return res.status(401).json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." });
         }
 
-        res.status(200).json({ message: "✅ 로그인 성공!", username: user.username });
+        // JWT 생성
+        const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, {
+            expiresIn: "2h" // 2시간 동안 유효한 토큰
+        });
 
+        // 쿠키에 JWT 저장 (httpOnly 쿠키)
+        res.cookie("token", token, {
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === "production", 
+            sameSite: "Strict",
+        });
+
+        res.json({ message: "✅ 로그인 성공!", username: user.username });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "서버 오류 발생" });
     }
 });
 
+// ✅ 로그인한 사용자 정보 확인 API
+router.get('/me', (req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) {
+            return res.status(401).json({ error: "로그인이 필요합니다." });
+        }
+
+        // 토큰 검증
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.json({ username: decoded.username });
+    } catch (error) {
+        return res.status(401).json({ error: "유효하지 않은 토큰입니다." });
+    }
+});
+
+// ✅ 로그아웃 API (쿠키 삭제)
+router.post('/logout', (req, res) => {
+    res.clearCookie("token");
+    res.json({ message: "✅ 로그아웃 되었습니다." });
+});
 
 export default router;
