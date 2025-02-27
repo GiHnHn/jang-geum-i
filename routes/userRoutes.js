@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
         }
 
         // 비밀번호 확인
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcryptjs.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ error: "이메일 또는 비밀번호가 올바르지 않습니다." });
         }
