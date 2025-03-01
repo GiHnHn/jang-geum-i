@@ -41,6 +41,7 @@ function MainApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // ✅ 사이드바 상태 추가
   const [searchHistory, setSearchHistory] = useState([]); // 🔥 이전 검색 기록 저장
   const [selectedRecipe, setSelectedRecipe] = useState(null); // 🔥 선택된 레시피 저장
+  const [searchResult, setSearchResult] = useState(null); // 🔥 검색된 레시피 결과
   const navigate = useNavigate();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 파일 크기 제한: 5MB
@@ -165,6 +166,20 @@ function MainApp() {
     }
   };
 
+  // ✅ 🔥 새로운 레시피 검색
+  const fetchNewRecipe = async () => {
+    if (!inputText.trim()) return alert("검색어를 입력해주세요!");
+
+    try {
+      const response = await axios.post(`${BACKEND_API_URL}/upload`, { query: inputText }, { withCredentials: true });
+      setSearchResult(response.data); // 🔥 새로운 검색 결과 저장
+      setSelectedRecipe(null); // 🔥 기존 검색 기록 비우기
+    } catch (error) {
+      console.error("🚨 레시피 검색 오류:", error);
+      alert("검색 중 오류가 발생했습니다.");
+    }
+  };
+
   // ✅ 🔥 이전 검색 기록 가져오기
   const fetchSearchHistory = async () => {
     try {
@@ -184,9 +199,11 @@ function MainApp() {
 
   // ✅ 레시피 클릭 시 상세 정보 보기
   const handleRecipeClick = (recipe) => {
-    setSelectedRecipe(recipe);
+    setSearchResult(recipe);
+    setSelectedRecipe(null); // 🔥 기존 검색 기록 삭제
   };
-
+  
+  
   // ✅ 버튼 스타일 추가
 const styles = {
   authButton: {
@@ -247,7 +264,7 @@ const styles = {
           }}
         />
         <button
-          onClick={() => handleUpload(null)}
+          onClick={fetchNewRecipe}
           style={{
             padding: "10px 15px",
             fontSize: "0.9rem",
@@ -393,26 +410,42 @@ const styles = {
           📜 이전 레시피 조회
         </button>
 
-        <ul style={{ width: "100%", padding: "10px", listStyle: "none", marginTop: "10px" }}>
-          {searchHistory.length > 0 ? (
-            searchHistory.map((entry, index) => (
-              <li
-                key={index}
-                style={{
-                  padding: "10px",
-                  borderBottom: "1px solid #ddd",
-                  cursor: "pointer",
-                  color: "#333",
-                }}
-                onClick={() => handleRecipeClick(entry.recipe)}
-              >
-                {entry.query} - {entry.recipe.dish}
-              </li>
-            ))
-          ) : (
-            <p style={{ color: "#666", marginTop: "10px" }}>이전 검색 기록이 없습니다.</p>
-          )}
-        </ul>
+        {/* 🔥 🔥 🔥 검색 기록 리스트 (스크롤 추가됨) */}
+        <div
+          style={{
+            flex: 1, 
+            overflowY: "auto",  // ✅ 스크롤 가능하도록 설정
+            overflowX: "hidden",
+            maxHeight: "60vh",  // ✅ 검색 기록이 많으면 70% 높이까지만 표시
+            width: "100%", 
+            paddingRight: "5px", // ✅ 스크롤 바와 내용이 겹치지 않도록 여백 추가
+            marginTop: "10px",
+          }}
+        >
+          <ul style={{ width: "100%", padding: "10px", listStyle: "none" }}>
+            {searchHistory.length > 0 ? (
+              searchHistory.map((entry, index) => (
+                <li
+                  key={index}
+                  style={{
+                    padding: "10px",
+                    borderBottom: "1px solid #ddd",
+                    cursor: "pointer",
+                    color: "#333",
+                    whiteSpace: "nowrap", // ✅ 한 줄로 유지
+                    overflow: "hidden",
+                    textOverflow: "ellipsis", // ✅ 너무 길면 ...으로 표시
+                  }}
+                  onClick={() => handleRecipeClick(entry.recipe)}
+                >
+                  {entry.query} - {entry.recipe.dish}
+                </li>
+              ))
+            ) : (
+              <p style={{ color: "#666", marginTop: "10px" }}>이전 검색 기록이 없습니다.</p>
+            )}
+          </ul>
+        </div>
 
         <button
           onClick={handleLogout}
@@ -430,39 +463,10 @@ const styles = {
         </button>
       </div>
 
-      {selectedRecipe && (
-        <div
-          style={{
-            marginTop: "30px",
-            textAlign: "left",
-            backgroundColor: "#fff",
-            padding: "20px",
-            borderRadius: "10px",
-            color: "#333",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            width: "100%",
-            maxWidth: "800px",
-          }}
-        >
-          <h2 style={{ color: "#4CAF50", fontSize: "1.5rem", marginBottom: "20px" }}>
-            요리 이름: {selectedRecipe.dish}
-          </h2>
-
-          <h3>재료:</h3>
-          <ul>
-            {selectedRecipe.ingredients.map((ingredient, index) => (
-              <li key={index}>{ingredient.name}: {ingredient.quantity}</li>
-            ))}
-          </ul>
-
-          <h3>조리법:</h3>
-          <ul>
-            {selectedRecipe.instructions.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
-          </ul>
-        </div>
+      {searchResult && (
+        <RecipeDisplay recipe={searchResult} navigate={navigate} />
       )}
+    
 
 
        {/* 여기부터 수정사항 */}
@@ -900,9 +904,38 @@ function PurchasePage() {
   );
 } 
 
-{/* 여기까지 수정사항 */}
-{/* 여기까지 수정사항 */}
-{/* 여기까지 수정사항 */}
+/* 여기까지 수정사항 */
+/* 여기까지 수정사항 */
+/* 여기까지 수정사항 */
+
+// ✅ 레시피 출력 컴포넌트, 유지보수 용이하도록 컴포넌트로 분리
+function RecipeDisplay({ recipe, navigate }) {
+  return (
+    <div style={{
+      marginTop: "30px", textAlign: "left", backgroundColor: "#fff",
+      padding: "20px", borderRadius: "10px", color: "#333",
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", width: "100%", maxWidth: "800px",
+    }}>
+      <h2 style={{ color: "#4CAF50" }}>요리 이름: {recipe.dish}</h2>
+      <h3>재료:</h3>
+      <ul>{recipe.ingredients.map((ingredient, index) => (
+        <li key={index}>{ingredient.name}: {ingredient.quantity}</li>
+      ))}</ul>
+      <h3>조리법:</h3>
+      <ul>{recipe.instructions.map((step, index) => (
+        <li key={index}>{step}</li>
+      ))}</ul>
+      <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "20px" }}>
+        <button onClick={() => navigate("/purchase", { state: { recipe } })} style={{ padding: "10px", backgroundColor: "#ccc", color: "#333", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+          구매하기
+        </button>
+        <button onClick={() => navigate("/cooking", { state: { recipe } })} style={{ padding: "10px", backgroundColor: "#4CAF50", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+          요리 시작
+        </button>
+      </div>
+    </div>
+  );
+}
 
 
 function CookingPage() {
