@@ -33,27 +33,16 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        const userAgent = (this && this.req && this.req.headers) ? this.req.headers['user-agent'] : "";
-        
-        // UptimeRobot 요청 허용
-        if (userAgent.includes("UptimeRobot") || allowedOrigins.includes(origin) || !origin) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: [
+        'https://jang-geum-i-front.web.app',
+        'https://jang-geum-i-front.firebaseapp.com',
+        'http://localhost:3000'
+    ],
+    credentials: true, // 🔥 쿠키가 포함된 요청을 허용
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-app.use(cookieParser()); // ✅ 쿠키 파싱 미들웨어 추가
 
-
-app.get('/health', (req, res) => {
-    res.status(200).json({ message: 'Server is running' });
-});
 
 
 
@@ -142,6 +131,9 @@ app.post('/upload', async (req, res) => {
     const token = req.cookies.token;
     let userId = null;  // 기본값: 로그인 안 한 상태
 
+    console.log("🟢 [DEBUG] 요청 헤더:", req.headers); // 🔥 요청 헤더 로그 출력
+    console.log("🟢 [DEBUG] 쿠키 정보:", req.cookies); // 🔥 쿠키 로그 출력
+
     try {
 
         // 🔥 JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
@@ -149,9 +141,12 @@ app.post('/upload', async (req, res) => {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
                 userId = decoded.id;
+                console.log("✅ [INFO] 로그인된 사용자:", userId);
             } catch (error) {
                 console.warn("⚠️ 유효하지 않은 토큰:", error.message);
             }
+        } else {
+            console.warn("❌ [WARNING] 토큰이 없음 (로그인되지 않은 사용자)");
         }
 
         const { sweet, spicy, salty } = calculateAverageTaste();

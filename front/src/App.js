@@ -58,6 +58,7 @@ function MainApp() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include" // 🔥 쿠키가 백엔드로 전달되도록 설정
     });
 
     if (!response.ok) {
