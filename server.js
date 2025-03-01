@@ -12,6 +12,7 @@ import axios from 'axios';
 import userRoutes from './routes/userRoutes.js';
 import './db.js';  // ✅ MongoDB 연결을 위해 db.js 불러오기
 import cookieParser from 'cookie-parser';
+import recipeRoutes from "./routes/recipeRoutes.js";
 
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
@@ -20,6 +21,7 @@ dotenv.config();
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
+const router = express.Router();
 
 const app = express();
 
@@ -131,15 +133,30 @@ const adjust_ingredients_percentage = (ingredients, salty_score, sweet_score, sp
     });
 };
 
+
 // ------------------------------------------
 // 기존 /upload 라우트 (OpenAI API 호출 부분)
 // ------------------------------------------
 app.post('/upload', async (req, res) => {
     const { query, imageUrl } = req.body;
+    const token = req.cookies.token;
+    let userId = null;  // 기본값: 로그인 안 한 상태
 
     try {
+
+        // 🔥 JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                userId = decoded.id;
+            } catch (error) {
+                console.warn("⚠️ 유효하지 않은 토큰:", error.message);
+            }
+        }
+
         const { sweet, spicy, salty } = calculateAverageTaste();
         let openAiResponse;
+
         // OpenAI API 호출
         if (query) {
             try {
@@ -315,6 +332,24 @@ app.post('/upload', async (req, res) => {
 
         ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
+        // 🔥 로그인한 사용자만 검색 기록 저장
+        if (userId) {
+            const newSearch = new RecipeHistory({
+                userId,
+                query,
+                recipe: {
+                    dish: dishName,
+                    ingredients,
+                    instructions,
+                },
+                timestamp: new Date(), // 🔥 검색한 시각 저장
+            });
+
+            await newSearch.save();
+            console.log("✅ 검색 기록 저장 완료!");
+        } else {
+            console.log("🔹 로그인하지 않은 사용자 검색 수행 (검색 기록 저장 안 함)");
+        }
 
         // 클라이언트로 결과 전송
         res.json({
@@ -330,6 +365,9 @@ app.post('/upload', async (req, res) => {
 
 // ✅ 회원가입 API 라우트 추가
 app.use('/api/users', userRoutes);
+
+ // 🔥 레시피 관련 API 추가
+app.use("/api/recipes", recipeRoutes);
 
 app.get("/api/users/me", async (req, res) => {
     try {
