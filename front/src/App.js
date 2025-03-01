@@ -68,17 +68,25 @@ function MainApp() {
     return await response.json();
   };
 
+  // ✅ JWT 토큰 확인하여 사용자 정보 불러오기
   useEffect(() => {
-    async function fetchUser() {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
         try {
-            const response = await axios.get(`${BACKEND_API_URL}/api/users/me`, { withCredentials: true });
-            setUser(response.data.username);
+          const response = await axios.get(`${BACKEND_API_URL}/api/users/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUser(response.data.username);
         } catch (error) {
-            console.log("로그인 정보 없음");
+          console.error("사용자 정보 불러오기 실패:", error);
+          localStorage.removeItem("token");
+          setUser(null);
         }
-    }
+      }
+    };
     fetchUser();
-}, []);
+  }, []);
 
   // 파일 업로드 및 텍스트/이미지 처리
   const handleUpload = async (file) => {
@@ -151,12 +159,13 @@ function MainApp() {
     navigate("/purchase", { state: { recipe: result } }); // 📌 3번 화면(구매 페이지)으로 이동할 때 recipe 데이터 전달
   };
 
-  // 로그 아웃 기능 추가
-  const handleLogout = async () => {
-    await axios.post(`${BACKEND_API_URL}/api/users/logout`, {}, { withCredentials: true });
+  // ✅ 로그아웃 기능
+  const handleLogout = () => {
+    localStorage.removeItem("token");
     setUser(null);
+    alert("✅ 로그아웃 되었습니다.");
     navigate("/");
-};
+  };
 
   // ✅ 버튼 스타일 추가
 const styles = {
@@ -567,11 +576,11 @@ function LoginPage({ setUser }) {
       const response = await axios.post(`${BACKEND_API_URL}/api/users/login`, formData, { withCredentials: true });
 
       if (response.status === 200) {
-        const { username } = response.data;
-        setUser(username); // 🔥 메인 화면에 사용자명 표시
-        localStorage.setItem("username", username); // 🔥 사용자명 저장
+        const { token, username } = response.data;
+        localStorage.setItem("token", token);
         alert("✅ 로그인 성공!");
         navigate("/"); // ✅ 로그인 후 메인 화면으로 이동
+        window.location.reload(); // ✅ 사용자명 즉시 반영
       } else {
         setMessage(response.data.error || "❌ 로그인 실패");
       }

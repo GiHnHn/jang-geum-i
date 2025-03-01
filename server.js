@@ -331,6 +331,22 @@ app.post('/upload', async (req, res) => {
 // ✅ 회원가입 API 라우트 추가
 app.use('/api/users', userRoutes);
 
+app.get("/api/users/me", async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) return res.status(401).json({ error: "인증되지 않은 사용자" });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId).select("username");
+
+        if (!user) return res.status(404).json({ error: "사용자 정보를 찾을 수 없음" });
+
+        res.json({ username: user.username });
+    } catch (error) {
+        res.status(401).json({ error: "토큰이 유효하지 않음" });
+    }
+});
+
 // ------------------------------------------
 // 네이버 쇼핑 검색 API 엔드포인트 추가
 // ------------------------------------------
