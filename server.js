@@ -26,6 +26,13 @@ const router = express.Router();
 
 const app = express();
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error("🚨 JWT_SECRET이 설정되지 않았습니다. .env 파일을 확인하세요.");
+    process.exit(1); // 서버 강제 종료 (필수 환경변수 미설정 시)
+}
+
+
 
 const allowedOrigins = [
     'https://jang-geum-i-front.web.app',
@@ -371,7 +378,7 @@ app.post('/upload', async (req, res) => {
 });
 
 // ✅ 회원가입 API 라우트 추가
-app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes(JWT_SECRET));
 
  // 🔥 레시피 관련 API 추가
 app.use("/api/recipes", recipeRoutes);
