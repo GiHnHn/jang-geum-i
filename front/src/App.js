@@ -38,6 +38,9 @@ function MainApp() {
   const [status, setStatus] = useState("idle"); // 현재 상태: idle, uploading, extracting, complete
   const [error, setError] = useState(null); // 에러 메시지
   const [user, setUser] = useState(null); // 사용자 로그인 상태
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // ✅ 사이드바 상태 추가
+  const [searchHistory, setSearchHistory] = useState([]); // 🔥 이전 검색 기록 저장
+  const [selectedRecipe, setSelectedRecipe] = useState(null); // 🔥 선택된 레시피 저장
   const navigate = useNavigate();
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 파일 크기 제한: 5MB
@@ -154,11 +157,34 @@ function MainApp() {
       await axios.post(`${BACKEND_API_URL}/api/users/logout`, {}, { withCredentials: true });
       localStorage.removeItem("username");
       setUser(null);
+      setIsSidebarOpen(false); // 사이드바 닫기
       alert("✅ 로그아웃 되었습니다.");
       navigate("/");
     } catch (error) {
       console.error("🚨 로그아웃 실패:", error);
     }
+  };
+
+  // ✅ 🔥 이전 검색 기록 가져오기
+  const fetchSearchHistory = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_API_URL}/api/recipes/search-history`, { withCredentials: true });
+      if (response.data && response.data.history) {
+        setSearchHistory(response.data.history);
+      }
+    } catch (error) {
+      console.error("🚨 검색 기록 불러오기 실패:", error);
+    }
+  };
+
+  // ✅ 검색 기록 버튼 클릭 시 조회
+  const handleShowSearchHistory = () => {
+    fetchSearchHistory();
+  };
+
+  // ✅ 레시피 클릭 시 상세 정보 보기
+  const handleRecipeClick = (recipe) => {
+    setSelectedRecipe(recipe);
   };
 
   // ✅ 버튼 스타일 추가
@@ -299,7 +325,12 @@ const styles = {
       <div style={{ position: "absolute", top: "10px", right: "20px" }}>
         {user ? (
           <>
-            <span style={{ marginRight: "10px", fontWeight: "bold", color: "#4CAF50" }}>{user}님</span>
+            <span
+            style={{ fontWeight: "bold", color: "#4CAF50", cursor: "pointer" }}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)} // 🔥 클릭하면 사이드바 토글
+          >
+            {user}님
+          </span>
             <button onClick={handleLogout} style={styles.logoutButton}>로그아웃</button>
           </>
         ) : (
@@ -309,6 +340,129 @@ const styles = {
           </div>
         )}
       </div>
+
+      {/* ✅ 사이드바 (우측에서 슬라이드) */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          right: isSidebarOpen ? "0px" : "-300px", // 🔥 열릴 때 0px, 닫힐 때 -300px
+          width: "250px",
+          height: "100vh",
+          backgroundColor: "#fff",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+          transition: "right 0.3s ease-in-out",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        {/* ❌ 사이드바 닫기 버튼 */}
+        <button
+          onClick={() => setIsSidebarOpen(false)}
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "15px",
+            fontSize: "1.5rem",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#888",
+          }}
+        >
+          ❌
+        </button>
+
+        <h2 style={{ color: "#4CAF50" }}>👤 사용자 정보</h2>
+        <p style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{user}</p>
+
+        <button
+          onClick={handleShowSearchHistory}
+          style={{
+            marginTop: "20px",
+            padding: "10px",
+            backgroundColor: "#007BFF",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          📜 이전 레시피 조회
+        </button>
+
+        <ul style={{ width: "100%", padding: "10px", listStyle: "none", marginTop: "10px" }}>
+          {searchHistory.length > 0 ? (
+            searchHistory.map((entry, index) => (
+              <li
+                key={index}
+                style={{
+                  padding: "10px",
+                  borderBottom: "1px solid #ddd",
+                  cursor: "pointer",
+                  color: "#333",
+                }}
+                onClick={() => handleRecipeClick(entry.recipe)}
+              >
+                {entry.query} - {entry.recipe.dish}
+              </li>
+            ))
+          ) : (
+            <p style={{ color: "#666", marginTop: "10px" }}>이전 검색 기록이 없습니다.</p>
+          )}
+        </ul>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            marginTop: "20px",
+            padding: "10px 15px",
+            backgroundColor: "red",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          로그아웃
+        </button>
+      </div>
+
+      {selectedRecipe && (
+        <div
+          style={{
+            marginTop: "30px",
+            textAlign: "left",
+            backgroundColor: "#fff",
+            padding: "20px",
+            borderRadius: "10px",
+            color: "#333",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            width: "100%",
+            maxWidth: "800px",
+          }}
+        >
+          <h2 style={{ color: "#4CAF50", fontSize: "1.5rem", marginBottom: "20px" }}>
+            요리 이름: {selectedRecipe.dish}
+          </h2>
+
+          <h3>재료:</h3>
+          <ul>
+            {selectedRecipe.ingredients.map((ingredient, index) => (
+              <li key={index}>{ingredient.name}: {ingredient.quantity}</li>
+            ))}
+          </ul>
+
+          <h3>조리법:</h3>
+          <ul>
+            {selectedRecipe.instructions.map((step, index) => (
+              <li key={index}>{step}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
 
        {/* 여기부터 수정사항 */}

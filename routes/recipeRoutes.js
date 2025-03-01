@@ -16,7 +16,7 @@ router.get("/search-history", async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.id;
 
-        const history = await RecipeHistory.find({ userId }).sort({ createdAt: -1 });
+        const history = await Recipe.find({ userId }).sort({ createdAt: -1 });
 
         res.json({ history });
     } catch (error) {
