@@ -9,6 +9,7 @@ import path from 'path';
 import speech from "@google-cloud/speech";
 import fs from "fs";
 import axios from 'axios';
+import jwt from "jsonwebtoken";  // ✅ 추가해야 함!
 import userRoutes from './routes/userRoutes.js';
 import './db.js';  // ✅ MongoDB 연결을 위해 db.js 불러오기
 import cookieParser from 'cookie-parser';
