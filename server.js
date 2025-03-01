@@ -17,6 +17,7 @@ import recipeRoutes from "./routes/recipeRoutes.js";
 
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
+import Recipe from './models/Recipe.js';
 
 dotenv.config();
 const openai = new OpenAI({
@@ -348,7 +349,7 @@ app.post('/upload', async (req, res) => {
 
         // 🔥 로그인한 사용자만 검색 기록 저장
         if (userId) {
-            const newSearch = new RecipeHistory({
+            const newSearch = new Recipe({
                 userId,
                 query,
                 recipe: {
