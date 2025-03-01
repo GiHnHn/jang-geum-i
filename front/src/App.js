@@ -68,24 +68,12 @@ function MainApp() {
     return await response.json();
   };
 
-  // ✅ JWT 토큰 확인하여 사용자 정보 불러오기
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const response = await axios.get(`${BACKEND_API_URL}/api/users/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setUser(response.data.username);
-        } catch (error) {
-          console.error("사용자 정보 불러오기 실패:", error);
-          localStorage.removeItem("token");
-          setUser(null);
-        }
-      }
-    };
-    fetchUser();
+    // 🔥 localStorage에서 로그인 정보 불러오기
+    const storedUser = localStorage.getItem("username");
+    if (storedUser) {
+      setUser(storedUser);
+    }
   }, []);
 
   // 파일 업로드 및 텍스트/이미지 처리
@@ -160,11 +148,16 @@ function MainApp() {
   };
 
   // ✅ 로그아웃 기능
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    alert("✅ 로그아웃 되었습니다.");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${BACKEND_API_URL}/api/users/logout`, {}, { withCredentials: true });
+      localStorage.removeItem("username");
+      setUser(null);
+      alert("✅ 로그아웃 되었습니다.");
+      navigate("/");
+    } catch (error) {
+      console.error("🚨 로그아웃 실패:", error);
+    }
   };
 
   // ✅ 버튼 스타일 추가
@@ -577,10 +570,10 @@ function LoginPage({ setUser }) {
 
       if (response.status === 200) {
         const { token, username } = response.data;
-        localStorage.setItem("token", token);
+        setUser(username);
+        localStorage.setItem("username", username);
         alert("✅ 로그인 성공!");
         navigate("/"); // ✅ 로그인 후 메인 화면으로 이동
-        window.location.reload(); // ✅ 사용자명 즉시 반영
       } else {
         setMessage(response.data.error || "❌ 로그인 실패");
       }
