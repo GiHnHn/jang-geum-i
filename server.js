@@ -33,11 +33,16 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-    origin: [
-        'https://jang-geum-i-front.web.app',
-        'https://jang-geum-i-front.firebaseapp.com',
-        'http://localhost:3000'
-    ],
+    origin: function (origin, callback) {
+        const userAgent = (this && this.req && this.req.headers) ? this.req.headers['user-agent'] : "";
+        
+        // UptimeRobot 요청 허용
+        if (userAgent.includes("UptimeRobot") || allowedOrigins.includes(origin) || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']    

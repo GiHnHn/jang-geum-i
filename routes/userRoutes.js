@@ -62,7 +62,7 @@ router.post('/login', async (req, res) => {
         res.cookie("token", token, {
             httpOnly: true, 
             secure: process.env.NODE_ENV === "production", 
-            sameSite: "Strict",
+            sameSite: "None",
         });
 
         res.json({ message: "✅ 로그인 성공!", username: user.username });
