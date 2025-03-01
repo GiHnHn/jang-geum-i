@@ -38,11 +38,17 @@ app.use(cors({
         'https://jang-geum-i-front.firebaseapp.com',
         'http://localhost:3000'
     ],
-    credentials: true, // 🔥 쿠키가 포함된 요청을 허용
+    credentials: true,
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization']    
 }));
+app.use(express.json());
+app.use(cookieParser()); // ✅ 쿠키 파싱 미들웨어 추가
 
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ message: 'Server is running' });
+});
 
 
 
