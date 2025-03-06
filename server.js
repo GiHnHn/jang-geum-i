@@ -347,11 +347,13 @@ app.post('/upload', async (req, res) => {
 
         ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
+        const queryValue = query || "이미지 검색"; // ✅ query가 없으면 "이미지 검색"으로 대
+
         // 🔥 로그인한 사용자만 검색 기록 저장
         if (userId) {
             const newSearch = new Recipe({
                 userId,
-                query,
+                query: queryValue, // 🔥 이미지 검색 시 "이미지 검색"으로 저장
                 recipe: {
                     dish: dishName,
                     ingredients,
