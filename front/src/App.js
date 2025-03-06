@@ -40,7 +40,6 @@ function MainApp() {
   const [user, setUser] = useState(null); // 사용자 로그인 상태
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // ✅ 사이드바 상태 추가
   const [searchHistory, setSearchHistory] = useState([]); // 🔥 이전 검색 기록 저장
-  const [selectedRecipe, setSelectedRecipe] = useState(null); // 🔥 선택된 레시피 저장
   const [searchResult, setSearchResult] = useState(null); // 🔥 검색된 레시피 결과
   const navigate = useNavigate();
 
@@ -85,6 +84,7 @@ function MainApp() {
   const handleUpload = async (file) => {
     setError(null);
     setResult(null);
+    setSearchResult(null); // 🔥 기존 검색 결과 삭제
     setStatus("processing");
 
     try {
@@ -110,6 +110,8 @@ function MainApp() {
       if (!payload) {
         throw new Error("텍스트를 입력하거나 이미지를 업로드해주세요.");
       }
+
+      setStatus("extracting"); // 🔥 "레시피를 추출 중입니다..." 메시지 표시
 
       // 백엔드로 데이터 전송 -> OpenAI 응답(요리 정보) 수신
       const data = await fetchRecipeFromBackend(payload);
@@ -170,10 +172,15 @@ function MainApp() {
   const fetchNewRecipe = async () => {
     if (!inputText.trim()) return alert("검색어를 입력해주세요!");
 
+    setError(null);
+    setResult(null);
+    setSearchResult(null); // 🔥 기존 검색 결과 삭제
+    setStatus("extracting"); // 🔥 "레시피를 추출 중입니다..." 메시지 표시
+    setInputText(""); // 🔥 검색 후 입력창 자동 삭제
+
     try {
       const response = await axios.post(`${BACKEND_API_URL}/upload`, { query: inputText }, { withCredentials: true });
       setSearchResult(response.data); // 🔥 새로운 검색 결과 저장
-      setSelectedRecipe(null); // 🔥 기존 검색 기록 비우기
     } catch (error) {
       console.error("🚨 레시피 검색 오류:", error);
       alert("검색 중 오류가 발생했습니다.");
@@ -200,7 +207,6 @@ function MainApp() {
   // ✅ 레시피 클릭 시 상세 정보 보기
   const handleRecipeClick = (recipe) => {
     setSearchResult(recipe);
-    setSelectedRecipe(null); // 🔥 기존 검색 기록 삭제
   };
   
   
@@ -728,7 +734,7 @@ function LoginPage({ setUser }) {
       const response = await axios.post(`${BACKEND_API_URL}/api/users/login`, formData, { withCredentials: true });
 
       if (response.status === 200) {
-        const { token, username } = response.data;
+        const { username } = response.data;
         setUser(username);
         localStorage.setItem("username", username);
         alert("✅ 로그인 성공!");
