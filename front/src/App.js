@@ -85,6 +85,7 @@ function MainApp() {
     setError(null);
     setResult(null);
     setSearchResult(null); // 🔥 기존 검색 결과 삭제
+    setImageUrl(null); // ✅ 기존 이미지 삭제
     setStatus("processing");
 
     try {
@@ -175,15 +176,18 @@ function MainApp() {
     setError(null);
     setResult(null);
     setSearchResult(null); // 🔥 기존 검색 결과 삭제
+    setImageUrl(null); // ✅ 기존 이미지 삭제
     setStatus("extracting"); // 🔥 "레시피를 추출 중입니다..." 메시지 표시
     setInputText(""); // 🔥 검색 후 입력창 자동 삭제
 
     try {
       const response = await axios.post(`${BACKEND_API_URL}/upload`, { query: inputText }, { withCredentials: true });
       setSearchResult(response.data); // 🔥 새로운 검색 결과 저장
+      setStatus("complete"); // ✅ 검색 완료 후 상태 업데이트 (파란색 문구 사라짐)
     } catch (error) {
       console.error("🚨 레시피 검색 오류:", error);
       alert("검색 중 오류가 발생했습니다.");
+      setStatus("idle"); // ✅ 오류 발생 시 상태 초기화
     }
   };
 
