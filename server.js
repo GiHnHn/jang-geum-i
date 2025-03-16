@@ -57,7 +57,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']    
 }));
 app.use(express.json());
-app.use(cookieParser()); // ✅ 쿠키 파싱 미들웨어 추가
+app.use(cookieParser()); // 쿠키 파싱 미들웨어 추가
 
 
 app.get('/health', (req, res) => {
@@ -151,22 +151,22 @@ app.post('/upload', async (req, res) => {
     const token = req.cookies.token;
     let userId = null;  // 기본값: 로그인 안 한 상태
 
-    console.log("🟢 [DEBUG] 요청 헤더:", req.headers); // 🔥 요청 헤더 로그 출력
-    console.log("🟢 [DEBUG] 쿠키 정보:", req.cookies); // 🔥 쿠키 로그 출력
+    console.log("🟢 [DEBUG] 요청 헤더:", req.headers); // 요청 헤더 로그 출력
+    console.log("🟢 [DEBUG] 쿠키 정보:", req.cookies); // 쿠키 로그 출력
 
     try {
 
-        // 🔥 JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
+        // JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
                 userId = decoded.id;
-                console.log("✅ [INFO] 로그인된 사용자:", userId);
+                console.log("[INFO] 로그인된 사용자:", userId);
             } catch (error) {
-                console.warn("⚠️ 유효하지 않은 토큰:", error.message);
+                console.warn("유효하지 않은 토큰:", error.message);
             }
         } else {
-            console.warn("❌ [WARNING] 토큰이 없음 (로그인되지 않은 사용자)");
+            console.warn("[WARNING] 토큰이 없음 (로그인되지 않은 사용자)");
         }
 
         const { sweet, spicy, salty } = calculateAverageTaste();
@@ -347,23 +347,21 @@ app.post('/upload', async (req, res) => {
 
         ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
-        const queryValue = query || "이미지 검색"; // ✅ query가 없으면 "이미지 검색"으로 대
-
-        // 🔥 로그인한 사용자만 검색 기록 저장
+        // 로그인한 사용자만 검색 기록 저장
         if (userId) {
             const newSearch = new Recipe({
                 userId,
-                query: queryValue, // 🔥 이미지 검색 시 "이미지 검색"으로 저장
+                query,
                 recipe: {
                     dish: dishName,
                     ingredients,
                     instructions,
                 },
-                timestamp: new Date(), // 🔥 검색한 시각 저장
+                timestamp: new Date(), // 검색한 시각 저장
             });
 
             await newSearch.save();
-            console.log("✅ 검색 기록 저장 완료!");
+            console.log("검색 기록 저장 완료!");
         } else {
             console.log("🔹 로그인하지 않은 사용자 검색 수행 (검색 기록 저장 안 함)");
         }
@@ -380,10 +378,10 @@ app.post('/upload', async (req, res) => {
     }
 });
 
-// ✅ 회원가입 API 라우트 추가
+// 회원가입 API 라우트 추가
 app.use('/api/users', userRoutes(JWT_SECRET));
 
- // 🔥 레시피 관련 API 추가
+ // 레시피 관련 API 추가
 app.use("/api/recipes", recipeRoutes);
 
 app.get("/api/users/me", async (req, res) => {
@@ -471,7 +469,7 @@ app.get('/api/search', async (req, res) => {
 
 
 // -------------------------------------------------------
-//  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가 예시 ▼▼▼
+//  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가
 // -------------------------------------------------------
 const initializeCredentials = () => {
     const base64ttskey = process.env.GOOGLE_TTS_KEY_B64;
@@ -530,7 +528,7 @@ app.post('/tts', async (req, res) => {
 
 
 // ------------------------------------
-// 🔥 새로운 AI 어시스턴트 엔드포인트 추가
+//  새로운 AI 어시스턴트 엔드포인트 추가
 // ------------------------------------
 app.post('/assistant', async (req, res) => {
     const { question, recipe } = req.body;
@@ -549,23 +547,53 @@ app.post('/assistant', async (req, res) => {
                     현재 요리는 "${recipe.dish}"야. 
                     재료 목록: ${recipe.ingredients.map(i => `${i.name} ${i.quantity}`).join(", ")}
                     조리법: ${recipe.instructions.join(" / ")} 
-                    사용자의 질문에 친절하고 명확하게 답변해줘.`,
+                    
+                    사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
+
+                    **가능한 액션 목록:**
+                    - next_step: 다음 조리 단계로 이동
+                    - prev_step: 이전 조리 단계로 이동
+                    - repeat_step: 현재 단계를 다시 안내
+                    - set_timer: 타이머 설정 (예: "5분 타이머 맞춰줘")
+                    - cancel_timer: 타이머 취소
+                    - navigate_home: 홈 화면으로 이동
+                    - response: 질문에 대한 응답 제공`,
                 },
                 { role: "user", content: question }
             ],
         });
 
-        const answer = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
+        const gptReply = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
 
-        // 🎯 쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
+        let actionData = { action: "response", answer: gptReply };
+
+        if (gptReply.includes("다음 단계")) {
+            actionData = { action: "next_step" };
+        } else if (gptReply.includes("이전 단계")) {
+            actionData = { action: "prev_step" };
+        } else if (gptReply.includes("다시 설명")) {
+            actionData = { action: "repeat_step" };
+        } else if (gptReply.includes("타이머")) {
+            const timeMatch = gptReply.match(/(\d+)(초|분)/);
+            if (timeMatch) {
+                const timeValue = parseInt(timeMatch[1], 10);
+                const timeInSeconds = timeMatch[2] === "분" ? timeValue * 60 : timeValue;
+                actionData = { action: "set_timer", time: timeInSeconds };
+            }
+        } else if (gptReply.includes("타이머 취소")) {
+            actionData = { action: "cancel_timer" };
+        } else if (gptReply.includes("홈 화면")) {
+            actionData = { action: "navigate_home" };
+        }
+
+        //  쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
         res.cookie("assistant_active", "true", {
             httpOnly: true,  // JS에서 접근 불가 (보안 강화)
             secure: true,  // HTTPS에서만 전송 가능 (로컬 개발 시 false)
             sameSite: "None",  // CORS 요청에서도 쿠키 전달 가능
         });
 
-        res.json({ answer });
-
+        res.json(actionData);
     } catch (error) {
         console.error("[ERROR] OpenAI 어시스턴트 실패:", error.message);
         res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
