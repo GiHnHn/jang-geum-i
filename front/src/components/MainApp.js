@@ -384,6 +384,21 @@ function MainApp({ user, setUser }) {
                   }}
                   onClick={() => handleRecipeClick(entry.recipe)}
                 >
+                {/* ✅ 이미지가 있을 경우 썸네일처럼 표시 */}
+                {entry.imageUrl && (
+                  <img
+                    src={entry.imageUrl}
+                    alt="thumbnail"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      objectFit: "cover",
+                      borderRadius: "5px",
+                      marginRight: "10px"
+                    }}
+                  />
+                )}
+                
                   {entry.query} - {entry.recipe.dish}
                 </li>
               ))

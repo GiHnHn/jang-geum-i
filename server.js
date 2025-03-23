@@ -351,7 +351,8 @@ app.post('/upload', async (req, res) => {
         if (userId) {
             const newSearch = new Recipe({
                 userId,
-                query,
+                query: query || '이미지 검색',
+                imageUrl: imageUrl || null,   // 이미지 URL 저장
                 recipe: {
                     dish: dishName,
                     ingredients,
