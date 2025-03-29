@@ -162,6 +162,12 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
     setTimerActive(false);
   };
 
+  const playAlarm = () => {
+    const audio = new Audio('/alarm.mp3'); // 혹은 public 경로에 있는 사운드 파일 경로
+    audio.play();
+  }
+  
+
 
   useEffect(() => {
     if (timeLeft > 0) {

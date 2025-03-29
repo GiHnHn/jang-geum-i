@@ -135,7 +135,11 @@ function MainApp({ user, setUser }) {
 
   const fetchSearchHistory = async () => {
     try {
-      const response = await axios.get(`${BACKEND_API_URL}/api/recipes/search-history`, { withCredentials: true });
+      const token = await user.getIdToken();
+      const response = await axios.get(`${BACKEND_API_URL}/api/recipes/search-history`,{
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }, withCredentials: true });
       if (response.data?.history) setSearchHistory(response.data.history);
     } catch (error) {
       console.error("🚨 검색 기록 불러오기 실패:", error);
