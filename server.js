@@ -56,6 +56,15 @@ app.use(cors({
     methods: ['GET', 'POST','OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']    
 }));
+import session from "express-session";
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || "your-secret-key",
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false }  // HTTPS 쓰면 true
+}));
+
 app.use(express.json());
 app.use(cookieParser()); // 쿠키 파싱 미들웨어 추가
 
@@ -452,22 +461,24 @@ app.post('/tts', async (req, res) => {
       let audioBase64;
   
       if (ttsUrl) {
-        // 2) 캐릭터별 TTS 서버 호출 (arraybuffer 로 raw 음성 데이터 받기)
-        const ttsResp = await axios.get(`${ttsUrl}`, {
-          params: {
-            ref_audio_path: "prompt_audio.wav",
-            prompt_text:    "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.", 
-            prompt_lang:    "ko",
-            text,           
-            text_lang:      "auto",
-            media_type:     format === "wav" ? "wav" : "mp3",
-          },
-          responseType: 'arraybuffer',
+        const params = {
+            text,
+            text_lang:  "auto",
+            media_type: format === "wav" ? "wav" : "mp3",
+          };
+    
+          if (isFirst) {
+            // 첫 호출일 때만 추가
+            params.ref_audio_path = "prompt_audio.wav";
+            params.prompt_text   = "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.";
+            params.prompt_lang   = "ko";
+          }
+
+        const ttsResp = await axios.get(ttsUrl, {
+            params,
+            responseType: 'arraybuffer',
         });
-  
-        // 3) arraybuffer → base64
-        const buf = Buffer.from(ttsResp.data, 'binary');
-        audioBase64 = buf.toString('base64');
+        audioBase64 = Buffer.from(ttsResp.data, 'binary').toString('base64');
   
       } else {
         // 4) 디폴트: Google Cloud TTS
@@ -486,7 +497,8 @@ app.post('/tts', async (req, res) => {
         }
         audioBase64 = gResponse.audioContent.toString("base64");
       }
-  
+
+      if (isFirst) req.session.isFirstTTS = false;
       // 5) 최종 반환
       return res.json({ audioBase64 });
   
