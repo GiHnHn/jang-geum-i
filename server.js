@@ -351,7 +351,59 @@ app.post('/upload', async (req, res) => {
                     role: 'user',
                     content: rawText
                     }
-                ]
+                ],
+                response_format: {
+                                    "type": "json_schema",
+                                    "json_schema": {
+                                        "name": "recipe",
+                                        "strict": true,
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "dish_name": {
+                                                    "type": "string",
+                                                    "description": "요리의 이름을 나타냅니다."
+                                                },
+                                                "ingredients": {
+                                                    "type": "array",
+                                                    "description": "요리에 필요한 재료 목록입니다.",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "description": "재료의 이름입니다."
+                                                            },
+                                                            "quantity": {
+                                                                "type": "string",
+                                                                "description": "재료의 양(g 단위)입니다."
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "quantity"
+                                                        ],
+                                                        "additionalProperties": false
+                                                    }
+                                                },
+                                                "instructions": {
+                                                    "type": "array",
+                                                    "description": "조리법 단계별 목록입니다.",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "description": "조리법의 각 단계 (문장 형식)."
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "dish_name",
+                                                "ingredients",
+                                                "instructions"
+                                            ],
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                }
                 });
             } catch (e) {
                 console.error('OpenAI 변환 요청 실패', e);
@@ -497,7 +549,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://zone-makes-performances-blessed.trycloudflare.com/tts",
+    baek:  "https://creator-clara-summit-locale.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
