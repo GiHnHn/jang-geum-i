@@ -15,9 +15,16 @@ import './db.js';  // ✅ MongoDB 연결을 위해 db.js 불러오기
 import cookieParser from 'cookie-parser';
 import recipeRoutes from "./routes/recipeRoutes.js";
 
+
+
 // ▶ 추가: Google Cloud TTS 패키지
 import textToSpeech from '@google-cloud/text-to-speech';
 import Recipe from './models/Recipe.js';
+
+const fs = require('fs');
+const path = require('path');
+
+
 
 dotenv.config();
 const openai = new OpenAI({
@@ -26,6 +33,16 @@ const openai = new OpenAI({
 const router = express.Router();
 
 const app = express();
+
+const characters = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, 'characters.json'), 'utf8')
+  );
+
+const CHARACTER_MAP = characters.reduce((map, cfg) => {
+  map[cfg.key] = cfg;
+  return map;
+}, {});
+
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -94,13 +111,52 @@ const storage = getStorage();
 // 기존 /upload 라우트 (OpenAI API 호출 부분)
 // ------------------------------------------
 app.post('/upload', async (req, res) => {
-    const { query, imageUrl } = req.body;
+    const { character, query, imageUrl } = req.body;
     const token = req.cookies.token;
+    const cfg = CHARACTER_MAP[character];
+    
+    if (!cfg) {
+        return res.status(400).json({ error: `알 수 없는 캐릭터: ${character}` });
+      }
+
+      
+
     let userId = null;  // 기본값: 로그인 안 한 상태
 
     console.log("🟢 [DEBUG] 요청 헤더:", req.headers); // 요청 헤더 로그 출력
     console.log("🟢 [DEBUG] 쿠키 정보:", req.cookies); // 쿠키 로그 출력
 
+    let rawText;
+    try {
+        // JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                userId = decoded.id;
+                console.log("[INFO] 로그인된 사용자:", userId);
+            } catch (error) {
+                console.warn("유효하지 않은 토큰:", error.message);
+            }
+        } else {
+            console.warn("[WARNING] 토큰이 없음 (로그인되지 않은 사용자)");
+        }
+
+        const prompt = [
+            `"백종원 스타일로 ${query}의 요리명, 재료, 요리순서를 알려줘."`,
+            `"답변은 항상 한 번만 해"`
+          ].join(' ');
+
+          const customRes = await axios.post(
+            cfg.url,
+            { prompt },                          // { prompt: "…", }
+            { headers: { 'Content-Type': 'application/json' } }
+          );
+
+        rawText = customRes.data.response;
+        } catch (e) {
+            console.error('커스텀 서버 호출 실패', e);
+            return res.status(500).json({ error: '외부 모델 응답을 가져오지 못했습니다.' });
+        }
     try {
 
         // JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
@@ -119,175 +175,202 @@ app.post('/upload', async (req, res) => {
         let openAiResponse;
 
         // OpenAI API 호출
-        if (query) {
-            try {
-                openAiResponse = await openai.chat.completions.create({
-                    model: "gpt-4o",
-                    messages: [
-                        {
-                            role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
-                        },
-                        {
-                            role: "user",
-                            content: [
-                                { type: "text", text: query },
-                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
-                            ],
-                        }
-                    ],
-                    response_format: {
-                        "type": "json_schema",
-                        "json_schema": {
-                            "name": "recipe",
-                            "strict": true,
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "dish_name": {
-                                        "type": "string",
-                                        "description": "요리의 이름을 나타냅니다."
-                                    },
-                                    "ingredients": {
-                                        "type": "array",
-                                        "description": "요리에 필요한 재료 목록입니다.",
-                                        "items": {
-                                            "type": "object",
-                                            "properties": {
-                                                "name": {
-                                                    "type": "string",
-                                                    "description": "재료의 이름입니다."
-                                                },
-                                                "quantity": {
-                                                    "type": "string",
-                                                    "description": "재료의 양(g 단위)입니다."
-                                                }
-                                            },
-                                            "required": [
-                                                "name",
-                                                "quantity"
-                                            ],
-                                            "additionalProperties": false
-                                        }
-                                    },
-                                    "instructions": {
-                                        "type": "array",
-                                        "description": "조리법 단계별 목록입니다.",
-                                        "items": {
-                                            "type": "string",
-                                            "description": "조리법의 각 단계 (문장 형식)."
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "dish_name",
-                                    "ingredients",
-                                    "instructions"
-                                ],
-                                "additionalProperties": false
-                            }
-                        }
-                    }
-                });
+        // if (query) {
+        //     try {
+        //         openAiResponse = await openai.chat.completions.create({
+        //             model: "gpt-4o",
+        //             messages: [
+        //                 {
+        //                     role: "system",
+        //                     content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
+        //                 },
+        //                 {
+        //                     role: "user",
+        //                     content: [
+        //                         { type: "text", text: query },
+        //                         { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
+        //                     ],
+        //                 }
+        //             ],
+        //             response_format: {
+        //                 "type": "json_schema",
+        //                 "json_schema": {
+        //                     "name": "recipe",
+        //                     "strict": true,
+        //                     "schema": {
+        //                         "type": "object",
+        //                         "properties": {
+        //                             "dish_name": {
+        //                                 "type": "string",
+        //                                 "description": "요리의 이름을 나타냅니다."
+        //                             },
+        //                             "ingredients": {
+        //                                 "type": "array",
+        //                                 "description": "요리에 필요한 재료 목록입니다.",
+        //                                 "items": {
+        //                                     "type": "object",
+        //                                     "properties": {
+        //                                         "name": {
+        //                                             "type": "string",
+        //                                             "description": "재료의 이름입니다."
+        //                                         },
+        //                                         "quantity": {
+        //                                             "type": "string",
+        //                                             "description": "재료의 양(g 단위)입니다."
+        //                                         }
+        //                                     },
+        //                                     "required": [
+        //                                         "name",
+        //                                         "quantity"
+        //                                     ],
+        //                                     "additionalProperties": false
+        //                                 }
+        //                             },
+        //                             "instructions": {
+        //                                 "type": "array",
+        //                                 "description": "조리법 단계별 목록입니다.",
+        //                                 "items": {
+        //                                     "type": "string",
+        //                                     "description": "조리법의 각 단계 (문장 형식)."
+        //                                 }
+        //                             }
+        //                         },
+        //                         "required": [
+        //                             "dish_name",
+        //                             "ingredients",
+        //                             "instructions"
+        //                         ],
+        //                         "additionalProperties": false
+        //                     }
+        //                 }
+        //             }
+        //         });
 
-                console.log('[INFO] OpenAI API 요청 성공');
-            } catch (apiError) {
-                console.error('[ERROR] OpenAI API 요청 실패:', apiError.message || apiError.response?.data);
-                return res.status(500).json({ error: 'Failed to fetch data from OpenAI API.' });
-            }
-        } else if (imageUrl) {
-            try {
-                openAiResponse = await openai.chat.completions.create({
-                    model: "gpt-4o",
-                    messages: [
-                        {
-                            role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
-                        },
-                        {
-                            role: "user",
-                            content: [
-                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
-                                { type: "image_url", image_url: { "url": imageUrl } },
-                            ],
-                        }
-                    ],
-                    response_format: {
-                        "type": "json_schema",
-                        "json_schema": {
-                            "name": "recipe",
-                            "strict": true,
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "dish_name": {
-                                        "type": "string",
-                                        "description": "요리의 이름을 나타냅니다."
-                                    },
-                                    "ingredients": {
-                                        "type": "array",
-                                        "description": "요리에 필요한 재료 목록입니다.",
-                                        "items": {
-                                            "type": "object",
-                                            "properties": {
-                                                "name": {
-                                                    "type": "string",
-                                                    "description": "재료의 이름입니다."
-                                                },
-                                                "quantity": {
-                                                    "type": "string",
-                                                    "description": "재료의 양(g 단위)입니다."
-                                                }
-                                            },
-                                            "required": [
-                                                "name",
-                                                "quantity"
-                                            ],
-                                            "additionalProperties": false
-                                        }
-                                    },
-                                    "instructions": {
-                                        "type": "array",
-                                        "description": "조리법 단계별 목록입니다.",
-                                        "items": {
-                                            "type": "string",
-                                            "description": "조리법의 각 단계 (문장 형식)."
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "dish_name",
-                                    "ingredients",
-                                    "instructions"
-                                ],
-                                "additionalProperties": false
-                            }
-                        }
-                    }
-                });
+        //         console.log('[INFO] OpenAI API 요청 성공');
+        //     } catch (apiError) {
+        //         console.error('[ERROR] OpenAI API 요청 실패:', apiError.message || apiError.response?.data);
+        //         return res.status(500).json({ error: 'Failed to fetch data from OpenAI API.' });
+        //     }
+        // } else if (imageUrl) {
+        //     try {
+        //         openAiResponse = await openai.chat.completions.create({
+        //             model: "gpt-4o",
+        //             messages: [
+        //                 {
+        //                     role: "system",
+        //                     content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
+        //                 },
+        //                 {
+        //                     role: "user",
+        //                     content: [
+        //                         { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
+        //                         { type: "image_url", image_url: { "url": imageUrl } },
+        //                     ],
+        //                 }
+        //             ],
+        //             response_format: {
+        //                 "type": "json_schema",
+        //                 "json_schema": {
+        //                     "name": "recipe",
+        //                     "strict": true,
+        //                     "schema": {
+        //                         "type": "object",
+        //                         "properties": {
+        //                             "dish_name": {
+        //                                 "type": "string",
+        //                                 "description": "요리의 이름을 나타냅니다."
+        //                             },
+        //                             "ingredients": {
+        //                                 "type": "array",
+        //                                 "description": "요리에 필요한 재료 목록입니다.",
+        //                                 "items": {
+        //                                     "type": "object",
+        //                                     "properties": {
+        //                                         "name": {
+        //                                             "type": "string",
+        //                                             "description": "재료의 이름입니다."
+        //                                         },
+        //                                         "quantity": {
+        //                                             "type": "string",
+        //                                             "description": "재료의 양(g 단위)입니다."
+        //                                         }
+        //                                     },
+        //                                     "required": [
+        //                                         "name",
+        //                                         "quantity"
+        //                                     ],
+        //                                     "additionalProperties": false
+        //                                 }
+        //                             },
+        //                             "instructions": {
+        //                                 "type": "array",
+        //                                 "description": "조리법 단계별 목록입니다.",
+        //                                 "items": {
+        //                                     "type": "string",
+        //                                     "description": "조리법의 각 단계 (문장 형식)."
+        //                                 }
+        //                             }
+        //                         },
+        //                         "required": [
+        //                             "dish_name",
+        //                             "ingredients",
+        //                             "instructions"
+        //                         ],
+        //                         "additionalProperties": false
+        //                     }
+        //                 }
+        //             }
+        //         });
 
-                console.log('[INFO] OpenAI API 요청 성공');
-            } catch (apiError) {
-                console.error('[ERROR] OpenAI API 요청 실패:', apiError.message || apiError.response?.data);
-                return res.status(500).json({ error: 'Failed to fetch data from OpenAI API.' });
+        //         console.log('[INFO] OpenAI API 요청 성공');
+        //     } catch (apiError) {
+        //         console.error('[ERROR] OpenAI API 요청 실패:', apiError.message || apiError.response?.data);
+        //         return res.status(500).json({ error: 'Failed to fetch data from OpenAI API.' });
+        //     }
+        // }
+
+        let jsonifyRes;
+            try {
+                jsonifyRes = await openai.chat.completions.create({
+                model: 'gpt-4o',
+                messages: [
+                    {
+                    role: 'system',
+                    content: `아래 텍스트를 엄격한 JSON 스키마에 맞춰 변환해줘.
+                                스키마:  
+                                {  
+                                "dish_name": string,  
+                                "ingredients": [ { "name": string, "quantity": string } ],  
+                                "instructions": [ string ]  
+                                }`
+                                
+                    },
+                    {
+                    role: 'user',
+                    content: rawText
+                    }
+                ]
+                });
+            } catch (e) {
+                console.error('OpenAI 변환 요청 실패', e);
+                return res.status(500).json({ error: 'JSON 변환에 실패했습니다.' });
             }
-        }
 
         // OpenAI로부터 반환된 데이터
-        const parsedResponse = openAiResponse.choices[0]?.message?.content;
-        let parsedJSON;
+        const jsonContent = jsonifyRes.choices[0].message.content;
+        let parsed;
         try {
-            parsedJSON = JSON.parse(parsedResponse);
-        } catch (parsingError) {
-            console.error('[ERROR] JSON 파싱 실패:', parsingError.message);
-            return res.status(500).json({ error: 'Failed to parse OpenAI response.' });
+            parsed = JSON.parse(jsonContent);
+        } catch (e) {
+            console.error('JSON 파싱 오류', e);
+            return res.status(500).json({ error: 'OpenAI가 반환한 JSON을 파싱할 수 없습니다.' });
         }
 
-        const dishName = parsedJSON?.dish_name || '요리의 이름을 찾지 못 했습니다.';
-        let ingredients = parsedJSON?.ingredients || [];
-        const instructions = parsedJSON?.instructions || '제공되는 레시피가 없습니다.';
+        const dishName = parsed?.dish_name || '요리의 이름을 찾지 못 했습니다.';
+        let ingredients = parsed?.ingredients || [];
+        const instructions = parsed?.instructions || '제공되는 레시피가 없습니다.';
 
-        console.log('[INFO] OpenAI 응답 데이터:', parsedJSON);
+        console.log('[INFO] OpenAI 응답 데이터:', parsed);
         console.log('[INFO] 추출된 요리 이름:', dishName);
 
         // 로그인한 사용자만 검색 기록 저장
