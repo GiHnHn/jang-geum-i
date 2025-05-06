@@ -53,7 +53,7 @@ app.use(cors({
         }
     },
     credentials: true,
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST','OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']    
 }));
 app.use(express.json());
@@ -517,6 +517,7 @@ app.post('/tts', async (req, res) => {
         text_lang:      "auto",
         media_type:     format === "wav" ? "wav" : "mp3",
       };
+
     let audioBuffer;
     const ttsUrl = TTS_SERVER_MAP[character];
 
