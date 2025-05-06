@@ -118,7 +118,7 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 세계 각 국의 다양한 요리와 그 요리의 레시피를 알고있는 전문가야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 그리고 재료 목록은 g단위로 환산해서 통일해줘."
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 그리고 재료 목록은 g단위로 환산해서 통일해줘."
                         },
                         {
                             role: "user",
@@ -194,7 +194,7 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 세계 각 국의 다양한 요리와 그 요리의 레시피를 알고있는 전문가야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 그리고 재료 목록은 g단위로 환산해서 통일해줘."
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 그리고 재료 목록은 g단위로 환산해서 통일해줘."
                         },
                         {
                             role: "user",
@@ -281,7 +281,6 @@ app.post('/upload', async (req, res) => {
 
         console.log('[INFO] OpenAI 응답 데이터:', parsedJSON);
         console.log('[INFO] 추출된 요리 이름:', dishName);
-        console.log(`[INFO] 사용자 평균 점수 적용 - 단맛: ${sweet}, 매운맛: ${spicy}, 짠맛: ${salty}`);
 
         ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
 
