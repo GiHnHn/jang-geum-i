@@ -21,8 +21,6 @@ import recipeRoutes from "./routes/recipeRoutes.js";
 import textToSpeech from '@google-cloud/text-to-speech';
 import Recipe from './models/Recipe.js';
 
-const fs = require('fs');
-const path = require('path');
 
 
 
