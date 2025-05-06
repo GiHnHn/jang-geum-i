@@ -338,7 +338,7 @@ app.post('/upload', async (req, res) => {
                 messages: [
                     {
                     role: 'system',
-                    content: `아래 텍스트를 엄격한 JSON 스키마에 맞춰 변환해줘.
+                    content: `요리 순서 부분에 있는 문장에서 단위같은 부분들을 일상생활에서 활용하기 쉬운 예시로 바꿔주고 TTS가 읽기 쉬운 문장으로 바꿔줘. 예를들어 0.4cm는 잘게 이런 느낌으로. 그 후에 텍스트를 아래와 같은 엄격한 JSON 스키마에 맞춰 변환해줘.
                                 스키마:  
                                 {  
                                 "dish_name": string,  
