@@ -705,7 +705,10 @@ app.post('/assistant', async (req, res) => {
         if (actionData.action === "response") {
             // 예: CHARACTER_MAP 에서 URL 가져오기
             const cfg = CHARACTER_MAP[character];
-            const prompt = `"${question}"`;  // 원하는 프롬프트로 조정
+            const prompt = [
+                `" ${question}"`,
+                `"답변은 항상 한 번만 해"`
+              ].join(' ');  // 원하는 프롬프트로 조정
       
             const llmRes = await axios.post(
               cfg.url,
