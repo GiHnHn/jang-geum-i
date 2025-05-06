@@ -459,7 +459,8 @@ app.post('/tts', async (req, res) => {
       const ttsUrl = TTS_SERVER_MAP[character];
   
       let audioBase64;
-  
+      
+
       if (ttsUrl) {
         const params = {
             text,
@@ -471,7 +472,7 @@ app.post('/tts', async (req, res) => {
             req.session.isFirst = true;
           }
     
-          if (isFirst) {
+          if (req.session.isFirst) {
             // 첫 호출일 때만 추가
             params.ref_audio_path = "prompt_audio.wav";
             params.prompt_text   = "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.";
