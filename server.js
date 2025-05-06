@@ -150,7 +150,7 @@ app.post('/upload', async (req, res) => {
 
           const customRes = await axios.post(
             cfg.url,
-            { prompt },                          // { prompt: "…", }
+            { prompt },                          // 
             { headers: { 'Content-Type': 'application/json' } }
           );
 
@@ -701,6 +701,20 @@ app.post('/assistant', async (req, res) => {
         } else if (gptReply.includes("홈 화면")) {
             actionData = { action: "navigate_home" };
         }
+
+        if (actionData.action === "response") {
+            // 예: CHARACTER_MAP 에서 URL 가져오기
+            const cfg = CHARACTER_MAP[character];
+            const prompt = `"${gptReply}"\nJSON으로 답변만 뱉어줘.`;  // 원하는 프롬프트로 조정
+      
+            const llmRes = await axios.post(
+              cfg.url,
+              { prompt },
+              { headers: { 'Content-Type': 'application/json' } }
+            );
+            // llm 서버 응답을 actionData.answer 에 덮어쓰기
+            actionData.answer = llmRes.data.response;
+          }
 
         //  쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
         res.cookie("assistant_active", "true", {
