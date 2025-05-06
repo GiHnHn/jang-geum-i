@@ -521,6 +521,8 @@ app.post('/tts', async (req, res) => {
     const ttsUrl = TTS_SERVER_MAP[character];
 
     if (ttsUrl) {
+        console.log(`[INFO] 요청 보냄: ${ttsUrl}`);
+        console.log(`[DEBUG] 파라미터:`, params);
         const resp = await axios.get(ttsUrl, {
           params,
           responseType: "arraybuffer",
