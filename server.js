@@ -549,7 +549,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://creator-clara-summit-locale.trycloudflare.com/tts",
+    baek:  "https://right-differ-validity-electron.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
