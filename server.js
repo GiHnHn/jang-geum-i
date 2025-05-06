@@ -450,7 +450,7 @@ const ttsClient = new textToSpeech.TextToSpeechClient({
   
       if (ttsUrl) {
         // 2) 캐릭터별 TTS 서버 호출 (arraybuffer 로 raw 음성 데이터 받기)
-        const ttsResp = await axios.get(`${ttsUrl}/tts`, {
+        const ttsResp = await axios.get(`${ttsUrl}`, {
           params: {
             ref_audio_path: "prompt_audio.wav",
             prompt_text:    "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.", 
