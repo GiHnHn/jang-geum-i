@@ -126,13 +126,13 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 그리고 재료 목록은 g단위로 환산해서 통일해줘. 조리법은 백종원 말투로 반환해줘"
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
                         },
                         {
                             role: "user",
                             content: [
                                 { type: "text", text: query },
-                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양(반드시 g 단위로), 자세한 레시피를 한국어로 출력해줘." },
+                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
                             ],
                         }
                     ],
@@ -202,12 +202,12 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 그리고 재료 목록은 g단위로 환산해서 통일해줘. 조리법은 백종원 말투로 반환해줘"
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
                         },
                         {
                             role: "user",
                             content: [
-                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양(반드시 g 단위로), 자세한 레시피를 한국어로 출력해줘." },
+                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
                                 { type: "image_url", image_url: { "url": imageUrl } },
                             ],
                         }
@@ -412,7 +412,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  " https://auto-surface-turkey-wild.trycloudflare.com/tts",
+    baek:  "https://teeth-technological-wizard-contrary.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
