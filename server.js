@@ -78,69 +78,7 @@ const firebaseConfig = {
 initializeApp(firebaseConfig);
 const storage = getStorage();
 
-// 퍼센트 조정 비율 설정
-const PERCENTAGE_CHANGE = {
-    "소금": 10,     
-    "설탕": 20,     
-    "고춧가루": 15  
-};
 
-// 사용자별 맛 평가 데이터 저장
-const userTasteData = {};
-
-// 사용자 맛 평가 저장 API
-app.post('/taste-evaluation', async (req, res) => {
-    const { user_id, sweet, spicy, salty } = req.body;
-
-    if (!user_id || sweet == null || spicy == null || salty == null) {
-        return res.status(400).json({ error: "사용자 ID와 모든 맛 점수를 입력해주세요." });
-    }
-
-    if (!userTasteData[user_id]) {
-        userTasteData[user_id] = { sweet: [], spicy: [], salty: [] };
-    }
-
-    userTasteData[user_id].sweet.push(sweet);
-    userTasteData[user_id].spicy.push(spicy);
-    userTasteData[user_id].salty.push(salty);
-
-    console.log(`[INFO] 사용자 ${user_id}의 평가 추가됨:`, userTasteData[user_id]);
-
-    res.json({ message: "입맛 평가가 저장되었습니다.", data: userTasteData[user_id] });
-});
-
-// 평균 점수 계산 함수
-const calculateAverageTaste = (user_id) => {
-    if (!userTasteData[user_id]) return { sweet: 3, spicy: 3, salty: 3 };
-
-    const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-
-    return {
-        sweet: avg(userTasteData[user_id].sweet).toFixed(1),
-        spicy: avg(userTasteData[user_id].spicy).toFixed(1),
-        salty: avg(userTasteData[user_id].salty).toFixed(1)
-    };
-};
-
-// 기존 ingredients 배열을 기반으로 조미료 양 조절
-const adjust_ingredients_percentage = (ingredients, salty_score, sweet_score, spicy_score) => {
-    return ingredients.map(item => {
-        let name = item.name;
-        let quantity = parseFloat(item.quantity.replace("g", "")) || 0;
-
-        if (PERCENTAGE_CHANGE[name]) {
-            let changePercentage = PERCENTAGE_CHANGE[name];
-            let scoreDifference = (name === "소금" ? (salty_score - 3) :
-                                   name === "설탕" ? (sweet_score - 3) :
-                                   (spicy_score - 3));
-
-            let adjustedQuantity = quantity * (1 + scoreDifference * changePercentage / 100);
-            return { name, quantity: `${adjustedQuantity.toFixed(1)}g` };
-        }
-
-        return item;
-    });
-};
 
 
 // ------------------------------------------
@@ -502,54 +440,60 @@ const ttsClient = new textToSpeech.TextToSpeechClient({
     keyFilename: ttsPath,
   });
 
-app.post('/tts', async (req, res) => {
-  try {
-    const { character, text, format = "mp3" } = req.body;
-    if (!text || !text.trim()) {
-      return res.status(400).json({ error: "No text provided for TTS." });
-    }
-    
-    const params = {
-        ref_audio_path: "prompt_audio.wav",
-        prompt_text:    "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.", // 필요에 따라 수정
-        prompt_lang:    "ko",
-        text,
-        text_lang:      "auto",
-        media_type:     format === "wav" ? "wav" : "mp3",
-      };
-
-    let audioBuffer;
-    const ttsUrl = TTS_SERVER_MAP[character];
-
-    if (ttsUrl) {
-        console.log(`[INFO] 요청 보냄: ${ttsUrl}`);
-        console.log(`[DEBUG] 파라미터:`, params);
-        const resp = await axios.get(ttsUrl, {
-          params,
-          responseType: "arraybuffer",
+  app.post('/tts', async (req, res) => {
+    try {
+      const { character, text, format = "mp3" } = req.body;
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: "No text provided for TTS." });
+      }
+  
+      // 1) 캐릭터별 외부 TTS 서버 URL
+      const ttsUrl = TTS_SERVER_MAP[character];
+  
+      let audioBase64;
+  
+      if (ttsUrl) {
+        // 2) 캐릭터별 TTS 서버 호출 (arraybuffer 로 raw 음성 데이터 받기)
+        const ttsResp = await axios.get(`${ttsUrl}/tts`, {
+          params: {
+            ref_audio_path: "prompt_audio.wav",
+            prompt_text:    "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.", 
+            prompt_lang:    "ko",
+            text,           
+            text_lang:      "auto",
+            media_type:     format === "wav" ? "wav" : "mp3",
+          },
+          responseType: 'arraybuffer',
         });
-        audioBuffer = Buffer.from(resp.data);
+  
+        // 3) arraybuffer → base64
+        const buf = Buffer.from(ttsResp.data, 'binary');
+        audioBase64 = buf.toString('base64');
+  
       } else {
-        // 4) 기본: Google Cloud TTS
-        const audioEncoding = format.toLowerCase() === "wav" ? "LINEAR16" : "MP3";
-        const [gResponse] = await ttsClient.synthesizeSpeech({
+        // 4) 디폴트: Google Cloud TTS
+        const audioEncoding = format.toLowerCase() === "wav"
+          ? "LINEAR16"
+          : "MP3";
+  
+        const request = {
           input: { text },
           voice: { languageCode: "ko-KR", ssmlGender: "FEMALE" },
           audioConfig: { audioEncoding },
-        });
+        };
+        const [gResponse] = await ttsClient.synthesizeSpeech(request);
         if (!gResponse.audioContent) {
-          throw new Error("Google TTS synthesis failed");
+          throw new Error("Google TTS failed");
         }
-        audioBuffer = Buffer.from(gResponse.audioContent, "binary");
+        audioBase64 = gResponse.audioContent.toString("base64");
       }
   
-      // 5) Base64로 감싸서 반환
-      const audioBase64 = audioBuffer.toString("base64");
-      res.json({ audioBase64 });
+      // 5) 최종 반환
+      return res.json({ audioBase64 });
   
     } catch (err) {
       console.error("[ERROR] /tts:", err);
-      res.status(500).json({ error: "TTS error." });
+      return res.status(500).json({ error: "TTS error." });
     }
   });
 // -------------------------------------------------------
