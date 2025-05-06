@@ -466,6 +466,10 @@ app.post('/tts', async (req, res) => {
             text_lang:  "auto",
             media_type: format === "wav" ? "wav" : "mp3",
           };
+
+          if (req.session.isFirst === undefined) {
+            req.session.isFirst = true;
+          }
     
           if (isFirst) {
             // 첫 호출일 때만 추가
