@@ -436,9 +436,12 @@ const ttsClient = new textToSpeech.TextToSpeechClient({
     keyFilename: ttsPath,
   });
 
-  app.post('/tts', async (req, res) => {
+app.post('/tts', async (req, res) => {
     try {
       const { character, text, format = "mp3" } = req.body;
+      console.log("▶▶ /tts called with:", { character, text, format });
+      console.log("▶▶ mapped ttsUrl:", TTS_SERVER_MAP[character]);
+
       if (!text || !text.trim()) {
         return res.status(400).json({ error: "No text provided for TTS." });
       }
