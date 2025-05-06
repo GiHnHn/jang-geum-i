@@ -412,7 +412,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "vegetable-allocated-clicks-bg.trycloudflare.com/tts",
+    baek:  "https://vegetable-allocated-clicks-bg.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
