@@ -484,6 +484,10 @@ app.post('/tts', async (req, res) => {
             responseType: 'arraybuffer',
         });
         audioBase64 = Buffer.from(ttsResp.data, 'binary').toString('base64');
+        
+        if (req.session.isFirst) {
+            req.session.isFirst = false;
+          }
   
       } else {
         // 4) 디폴트: Google Cloud TTS
@@ -502,8 +506,6 @@ app.post('/tts', async (req, res) => {
         }
         audioBase64 = gResponse.audioContent.toString("base64");
       }
-
-      if (isFirst) req.session.isFirstTTS = false;
       // 5) 최종 반환
       return res.json({ audioBase64 });
   
