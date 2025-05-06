@@ -107,7 +107,6 @@ app.post('/upload', async (req, res) => {
             console.warn("[WARNING] 토큰이 없음 (로그인되지 않은 사용자)");
         }
 
-        const { sweet, spicy, salty } = calculateAverageTaste();
         let openAiResponse;
 
         // OpenAI API 호출
