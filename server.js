@@ -281,8 +281,6 @@ app.post('/upload', async (req, res) => {
         console.log('[INFO] OpenAI 응답 데이터:', parsedJSON);
         console.log('[INFO] 추출된 요리 이름:', dishName);
 
-        ingredients = adjust_ingredients_percentage(ingredients, parseFloat(salty), parseFloat(sweet), parseFloat(spicy));
-
         // 로그인한 사용자만 검색 기록 저장
         if (userId) {
             const newSearch = new Recipe({
