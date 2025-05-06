@@ -1,0 +1,21 @@
+[
+    {
+      "name": "seung",
+      "type": "custom",
+      "url": "https://my-chat.ai/api/chat",
+      "systemPrompt": "너는 양념 전문가야. …"
+    },
+    {
+      "name": "jang",
+      "type": "openai",
+      "systemPrompt": "너는 다양한 한식 요리의 레시피를 알고있는 요리 전문가 장금이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘",
+      "model": "gpt-4o"
+    },
+    {
+        "name": "baek",
+        "type": "custom",
+        "url": "https://ten-belle-payments-attractions.trycloudflare.com/generate",
+        "apiKeyEnv": "",      
+        "systemPrompt": ""
+      }
+  ]
