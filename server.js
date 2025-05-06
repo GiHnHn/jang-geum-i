@@ -463,31 +463,20 @@ app.post('/tts', async (req, res) => {
 
       if (ttsUrl) {
         const params = {
+            ref_audio_path:  "prompt_audio.wav",
+            prompt_text:  "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.",
+            prompt_lang:  "ko",
             text,
             text_lang:  "auto",
             media_type: format === "wav" ? "wav" : "mp3",
           };
-
-          if (req.session.isFirst === undefined) {
-            req.session.isFirst = true;
-          }
-    
-          if (req.session.isFirst) {
-            // 첫 호출일 때만 추가
-            params.ref_audio_path = "prompt_audio.wav";
-            params.prompt_text   = "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.";
-            params.prompt_lang   = "ko";
-          }
 
         const ttsResp = await axios.get(ttsUrl, {
             params,
             responseType: 'arraybuffer',
         });
         audioBase64 = Buffer.from(ttsResp.data, 'binary').toString('base64');
-        
-        if (req.session.isFirst) {
-            req.session.isFirst = false;
-          }
+
   
       } else {
         // 4) 디폴트: Google Cloud TTS
