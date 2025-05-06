@@ -351,8 +351,7 @@ app.post('/upload', async (req, res) => {
         if (userId) {
             const newSearch = new Recipe({
                 userId,
-                query: query || '이미지 검색',
-                imageUrl: imageUrl || null,   // 이미지 URL 저장
+                query,
                 recipe: {
                     dish: dishName,
                     ingredients,
@@ -469,8 +468,14 @@ app.get('/api/search', async (req, res) => {
 });
 
 
+const TTS_SERVER_MAP = {
+    baek:  "https://story-deborah-count-downloadable.trycloudflare.com/tts",
+    seung: "https://seung-tts.example.com/tts",
+    jang:  "https://jang-tts.example.com/tts",
+  };
+
 // -------------------------------------------------------
-//  ▼▼▼ 새로운 라우트: Google Cloud TTS 기능 추가
+//  ▼▼▼ 새로운 라우트: TTS 기능 추가
 // -------------------------------------------------------
 const initializeCredentials = () => {
     const base64ttskey = process.env.GOOGLE_TTS_KEY_B64;
@@ -499,32 +504,51 @@ const ttsClient = new textToSpeech.TextToSpeechClient({
 
 app.post('/tts', async (req, res) => {
   try {
-    const { text } = req.body;
+    const { character, text, format = "mp3" } = req.body;
     if (!text || !text.trim()) {
       return res.status(400).json({ error: "No text provided for TTS." });
     }
+    
+    const params = {
+        ref_audio_path: "prompt_audio.wav",
+        prompt_text:    "천천히 괜히 잘못해서 실패했는데 안에는 안 익었더라 막 이러면 여러분이 잘못한 거예요, 진짜로. 난 분명히 보여줬어요, 제대로.", // 필요에 따라 수정
+        prompt_lang:    "ko",
+        text,
+        text_lang:      "auto",
+        media_type:     format === "wav" ? "wav" : "mp3",
+      };
+    let audioBuffer;
+    const ttsUrl = TTS_SERVER_MAP[character];
 
-    // Google Cloud TTS 요청
-    const request = {
-      input: { text },
-      voice: { languageCode: "ko-KR", ssmlGender: "FEMALE" },
-      audioConfig: { audioEncoding: "MP3" },
-    };
-
-    const [response] = await ttsClient.synthesizeSpeech(request);
-
-    if (!response.audioContent) {
-      return res.status(500).json({ error: "Failed to synthesize speech." });
+    if (ttsUrl) {
+        const resp = await axios.get(ttsUrl, {
+          params,
+          responseType: "arraybuffer",
+        });
+        audioBuffer = Buffer.from(resp.data);
+      } else {
+        // 4) 기본: Google Cloud TTS
+        const audioEncoding = format.toLowerCase() === "wav" ? "LINEAR16" : "MP3";
+        const [gResponse] = await ttsClient.synthesizeSpeech({
+          input: { text },
+          voice: { languageCode: "ko-KR", ssmlGender: "FEMALE" },
+          audioConfig: { audioEncoding },
+        });
+        if (!gResponse.audioContent) {
+          throw new Error("Google TTS synthesis failed");
+        }
+        audioBuffer = Buffer.from(gResponse.audioContent, "binary");
+      }
+  
+      // 5) Base64로 감싸서 반환
+      const audioBase64 = audioBuffer.toString("base64");
+      res.json({ audioBase64 });
+  
+    } catch (err) {
+      console.error("[ERROR] /tts:", err);
+      res.status(500).json({ error: "TTS error." });
     }
-
-    // 음성 바이너리를 base64로 변환
-    const audioBase64 = response.audioContent.toString("base64");
-    res.json({ audioBase64 });
-  } catch (err) {
-    console.error("[ERROR] Google Cloud TTS 실패:", err.message);
-    res.status(500).json({ error: "Google Cloud TTS error." });
-  }
-});
+  });
 // -------------------------------------------------------
 
 
@@ -532,7 +556,7 @@ app.post('/tts', async (req, res) => {
 //  새로운 AI 어시스턴트 엔드포인트 추가
 // ------------------------------------
 app.post('/assistant', async (req, res) => {
-    const { question, recipe } = req.body;
+    const { question, recipe, character } = req.body;
 
     if (!question || !recipe) {
         return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
@@ -550,12 +574,13 @@ app.post('/assistant', async (req, res) => {
                     조리법: ${recipe.instructions.join(" / ")} 
                     
                     사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
+                    필요한 정보를 제공할 때는 존댓말로 부탁해.
 
                     **가능한 액션 목록:**
                     - next_step: 다음 조리 단계로 이동
                     - prev_step: 이전 조리 단계로 이동
                     - repeat_step: 현재 단계를 다시 안내
-                    - set_timer: 타이머 설정 (예: "5분 타이머 맞춰줘")
+                    - set_timer: 타이머 설정 (예: "5분 타이머 맞춰줘" 또는 "30초 타이머 맞춰줘")
                     - cancel_timer: 타이머 취소
                     - navigate_home: 홈 화면으로 이동
                     - response: 질문에 대한 응답 제공`,
@@ -565,7 +590,6 @@ app.post('/assistant', async (req, res) => {
         });
 
         const gptReply = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
-
         let actionData = { action: "response", answer: gptReply };
 
         if (gptReply.includes("다음 단계")) {
