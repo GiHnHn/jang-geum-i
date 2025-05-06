@@ -12,8 +12,12 @@ import axios from 'axios';
 import jwt from "jsonwebtoken";  // ✅ 추가해야 함!
 import userRoutes from './routes/userRoutes.js';
 import './db.js';  // ✅ MongoDB 연결을 위해 db.js 불러오기
+import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import recipeRoutes from "./routes/recipeRoutes.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 
 
 
