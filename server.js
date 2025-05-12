@@ -332,87 +332,87 @@ app.post('/upload', async (req, res) => {
             }
         }
 
-        let jsonifyRes;
-            try {
-                jsonifyRes = await openai.chat.completions.create({
-                model: 'gpt-4o',
-                messages: [
-                    {
-                    role: 'system',
-                    content: `요리 순서 부분에 있는 문장에서 단위같은 부분들을 일상생활에서 활용하기 쉬운 예시로 바꿔줘. 예를들어 0.4cm는 잘게 이런 느낌으로. 근데 말투는 유지해줘야해. 그리고 "강불"은 "쌘불", "여기서 멸치다시다 좀 넣으면 더 진한 맛이 나요~"는 "다시다 넣으면 더 맛있어요. 국물맛이 더 찐해져요." 이런식으로 바꿔줘. 그리고 설명의 질은 유지하는데, 요리 순서의 갯수가 늘어나도 괜찮으니까 좀 더 간결한 문장으로 만들어줘. 요리순서 중 마지막 단계의 끝 부분에는 맛있게 드세요.를 추가해줘. 그 후에 텍스트를 아래와 같은 엄격한 JSON 스키마에 맞춰 변환해줘.
-                                스키마:  
-                                {  
-                                "dish_name": string,  
-                                "ingredients": [ { "name": string, "quantity": string } ],  
-                                "instructions": [ string ]  
-                                }`
+        // let jsonifyRes;
+        //     try {
+        //         jsonifyRes = await openai.chat.completions.create({
+        //         model: 'gpt-4o',
+        //         messages: [
+        //             {
+        //             role: 'system',
+        //             content: `요리 순서 부분에 있는 문장에서 단위같은 부분들을 일상생활에서 활용하기 쉬운 예시로 바꿔줘. 예를들어 0.4cm는 잘게 이런 느낌으로. 근데 말투는 유지해줘야해. 그리고 "강불"은 "쌘불", "여기서 멸치다시다 좀 넣으면 더 진한 맛이 나요~"는 "다시다 넣으면 더 맛있어요. 국물맛이 더 찐해져요." 이런식으로 바꿔줘. 그리고 설명의 질은 유지하는데, 요리 순서의 갯수가 늘어나도 괜찮으니까 좀 더 간결한 문장으로 만들어줘. 요리순서 중 마지막 단계의 끝 부분에는 맛있게 드세요.를 추가해줘. 그 후에 텍스트를 아래와 같은 엄격한 JSON 스키마에 맞춰 변환해줘.
+        //                         스키마:  
+        //                         {  
+        //                         "dish_name": string,  
+        //                         "ingredients": [ { "name": string, "quantity": string } ],  
+        //                         "instructions": [ string ]  
+        //                         }`
                                 
-                    },
-                    {
-                    role: 'user',
-                    content: openAiResponse
-                    }
-                ],
-                response_format: {
-                                    "type": "json_schema",
-                                    "json_schema": {
-                                        "name": "recipe",
-                                        "strict": true,
-                                        "schema": {
-                                            "type": "object",
-                                            "properties": {
-                                                "dish_name": {
-                                                    "type": "string",
-                                                    "description": "요리의 이름을 나타냅니다."
-                                                },
-                                                "ingredients": {
-                                                    "type": "array",
-                                                    "description": "요리에 필요한 재료 목록입니다.",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "name": {
-                                                                "type": "string",
-                                                                "description": "재료의 이름입니다."
-                                                            },
-                                                            "quantity": {
-                                                                "type": "string",
-                                                                "description": "재료의 양(g 단위)입니다."
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "name",
-                                                            "quantity"
-                                                        ],
-                                                        "additionalProperties": false
-                                                    }
-                                                },
-                                                "instructions": {
-                                                    "type": "array",
-                                                    "description": "조리법 단계별 목록입니다.",
-                                                    "items": {
-                                                        "type": "string",
-                                                        "description": "조리법의 각 단계 (문장 형식)."
-                                                    }
-                                                }
-                                            },
-                                            "required": [
-                                                "dish_name",
-                                                "ingredients",
-                                                "instructions"
-                                            ],
-                                            "additionalProperties": false
-                                        }
-                                    }
-                                }
-                });
-            } catch (e) {
-                console.error('OpenAI 변환 요청 실패', e);
-                return res.status(500).json({ error: 'JSON 변환에 실패했습니다.' });
-            }
+        //             },
+        //             {
+        //             role: 'user',
+        //             content: openAiResponse
+        //             }
+        //         ],
+        //         response_format: {
+        //                             "type": "json_schema",
+        //                             "json_schema": {
+        //                                 "name": "recipe",
+        //                                 "strict": true,
+        //                                 "schema": {
+        //                                     "type": "object",
+        //                                     "properties": {
+        //                                         "dish_name": {
+        //                                             "type": "string",
+        //                                             "description": "요리의 이름을 나타냅니다."
+        //                                         },
+        //                                         "ingredients": {
+        //                                             "type": "array",
+        //                                             "description": "요리에 필요한 재료 목록입니다.",
+        //                                             "items": {
+        //                                                 "type": "object",
+        //                                                 "properties": {
+        //                                                     "name": {
+        //                                                         "type": "string",
+        //                                                         "description": "재료의 이름입니다."
+        //                                                     },
+        //                                                     "quantity": {
+        //                                                         "type": "string",
+        //                                                         "description": "재료의 양(g 단위)입니다."
+        //                                                     }
+        //                                                 },
+        //                                                 "required": [
+        //                                                     "name",
+        //                                                     "quantity"
+        //                                                 ],
+        //                                                 "additionalProperties": false
+        //                                             }
+        //                                         },
+        //                                         "instructions": {
+        //                                             "type": "array",
+        //                                             "description": "조리법 단계별 목록입니다.",
+        //                                             "items": {
+        //                                                 "type": "string",
+        //                                                 "description": "조리법의 각 단계 (문장 형식)."
+        //                                             }
+        //                                         }
+        //                                     },
+        //                                     "required": [
+        //                                         "dish_name",
+        //                                         "ingredients",
+        //                                         "instructions"
+        //                                     ],
+        //                                     "additionalProperties": false
+        //                                 }
+        //                             }
+        //                         }
+        //         });
+        //     } catch (e) {
+        //         console.error('OpenAI 변환 요청 실패', e);
+        //         return res.status(500).json({ error: 'JSON 변환에 실패했습니다.' });
+        //     }
 
         // OpenAI로부터 반환된 데이터
-        const jsonContent = jsonifyRes.choices[0].message.content;
+        const jsonContent = openAiResponse.choices[0].message.content;
         let parsed;
         try {
             parsed = JSON.parse(jsonContent);
