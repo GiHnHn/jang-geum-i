@@ -185,7 +185,7 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘. 그리고 요리 순서의 마지막 단계의 끝에 '맛있게 드세요.'를 붙여줘."
                         },
                         {
                             role: "user",
@@ -261,7 +261,7 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘"
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘. 그리고 요리 순서의 마지막 단계의 끝에 '맛있게 드세요.'를 붙여줘."
                         },
                         {
                             role: "user",
@@ -550,7 +550,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://nearest-symphony-park-description.trycloudflare.com/tts",
+    baek:  "https://exotic-manner-strengthen-programmers.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
@@ -666,7 +666,7 @@ app.post('/assistant', async (req, res) => {
                     조리법: ${recipe.instructions.join(" / ")} 
                     
                     사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
-                    필요한 정보를 제공할 때는 백종원 말투투로 부탁해.
+                    필요한 정보를 제공할 때는 백종원 말투와 존댓말로 부탁해.
 
                     **가능한 액션 목록:**
                     - next_step: 다음 조리 단계로 이동
