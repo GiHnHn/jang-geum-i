@@ -731,6 +731,26 @@ app.post('/assistant', async (req, res) => {
     }
 });
 
+// ------------------------------------
+//  Webhook 테스트용 코드. 테스트 끝나면 삭제
+// ------------------------------------
+app.post("/api/test-command", async (req, res) => {
+    const { command } = req.body;
+  
+    try {
+      const webhookUrl = "https://n8n-service-4xc5.onrender.com/webhook/fortest";
+  
+      const response = await axios.post(webhookUrl, {
+        input: command,
+      });
+  
+      res.status(200).send(response.data); // 응답 텍스트 그대로 반환
+    } catch (error) {
+      console.error("Webhook 호출 실패:", error.message);
+      res.status(500).send("Webhook 호출 실패");
+    }
+  });
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
