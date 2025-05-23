@@ -58,7 +58,8 @@ if (!JWT_SECRET) {
 const allowedOrigins = [
     'https://jang-geum-i-front.web.app',
     'https://jang-geum-i-front.firebaseapp.com',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://n8n-service-4xc5.onrender.com/webhook/fortest'
 ];
 
 app.use(cors({
