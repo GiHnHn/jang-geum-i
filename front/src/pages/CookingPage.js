@@ -2,8 +2,8 @@
 import React, { useState} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CookingAssistant from "../components/CookingAssistant";
+import { useEffect } from "react";
 
-const BACKEND_API_URL = "https://jang-geum-i-backend.onrender.com";
 
 function CookingPage() {
   const location = useLocation();
@@ -11,53 +11,20 @@ function CookingPage() {
   const recipe = location.state?.recipe;
   const [currentStep, setCurrentStep] = useState(0);
   const [isCookingComplete, setIsCookingComplete] = useState(false);
-  const [evaluation, setEvaluation] = useState({
-    user_id: "",
-    sweet: "",
-    spicy: "",
-    salty: "",
-  });
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setEvaluation((prev) => ({ ...prev, [name]: value }));
-  };
 
-  const convertTasteScore = (text) => {
-    const mapping = {
-      "너무 부족하다": 5,
-      "조금 부족하다": 4,
-      "적절하다": 3,
-      "조금 과하다": 2,
-      "너무 과하다": 1,
-    };
-    return mapping[text] || 3;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!evaluation.user_id) return alert("사용자 ID를 입력해주세요.");
-
-    const data = {
-      user_id: evaluation.user_id,
-      sweet: convertTasteScore(evaluation.sweet),
-      spicy: convertTasteScore(evaluation.spicy),
-      salty: convertTasteScore(evaluation.salty),
-    };
-
-    try {
-      const response = await fetch(`${BACKEND_API_URL}/taste-evaluation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("서버 오류");
-      alert("입맛 평가가 저장되었습니다.");
-      navigate("/");
-    } catch (error) {
-      console.error("서버 오류:", error);
+  useEffect(() => {
+    if (isCookingComplete) {
+      const timeout = setTimeout(() => {
+        // 초기화 및 페이지 이동
+        navigate("/home", { replace: true });
+      }, 2000);
+  
+      return () => clearTimeout(timeout);
     }
-  };
+  }, [isCookingComplete, navigate]);
+
+
 
   const handleNextStep = () => {
     if (currentStep < recipe.instructions.length - 1) {
@@ -88,46 +55,10 @@ function CookingPage() {
     <div style={{ textAlign: "center", fontFamily: "Arial, sans-serif", backgroundColor: "#f9f9f9", minHeight: "100vh", paddingTop: "50px" }}>
       <h1 style={{ color: "#4CAF50", marginBottom: "20px" }}>{recipe.dish}</h1>
   
-      {/* 요리가 완료되면 맛 평가 폼 표시 */}
       {isCookingComplete ? (
         <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <h2>음식 맛 평가</h2>
-          <form onSubmit={handleSubmit}>
-            <label>사용자 ID를 입력해주세요:</label>
-            <input type="text" name="user_id" value={evaluation.user_id} onChange={handleChange} required />
-  
-            <label>단맛 강도를 평가해주세요:</label>
-            <select name="sweet" value={evaluation.sweet} onChange={handleChange} required>
-              <option value="">선택하세요</option>
-              <option value="너무 부족하다">너무 부족하다</option>
-              <option value="조금 부족하다">조금 부족하다</option>
-              <option value="적절하다">적절하다</option>
-              <option value="조금 과하다">조금 과하다</option>
-              <option value="너무 과하다">너무 과하다</option>
-            </select>
-  
-            <label>매운맛 강도를 평가해주세요:</label>
-            <select name="spicy" value={evaluation.spicy} onChange={handleChange} required>
-              <option value="">선택하세요</option>
-              <option value="너무 부족하다">너무 부족하다</option>
-              <option value="조금 부족하다">조금 부족하다</option>
-              <option value="적절하다">적절하다</option>
-              <option value="조금 과하다">조금 과하다</option>
-              <option value="너무 과하다">너무 과하다</option>
-            </select>
-  
-            <label>짠맛 강도를 평가해주세요:</label>
-            <select name="salty" value={evaluation.salty} onChange={handleChange} required>
-              <option value="">선택하세요</option>
-              <option value="너무 부족하다">너무 부족하다</option>
-              <option value="조금 부족하다">조금 부족하다</option>
-              <option value="적절하다">적절하다</option>
-              <option value="조금 과하다">조금 과하다</option>
-              <option value="너무 과하다">너무 과하다</option>
-            </select>
-  
-            <button type="submit">제출</button>
-          </form>
+          <h2>요리가 완료되었습니다!</h2>
+          <p>잠시 후 홈으로 이동합니다...</p>
         </div>
       ) : (
         <>
