@@ -1,10 +1,11 @@
 // components/CookingAssistant.js
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { AIResponse } from "../api";
-import { fetchTTS } from "../api";
+import { AIResponse, fetchTTS } from "../api";
+import { useCharacter } from "../contexts/CharacterContext";
 import CircularTimer from "./CircularTimer";
 
 function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
+  const { character } = useCharacter();
   const audioRef = useRef(null);
   const recognitionRef = useRef(null);
   const abortControllerRef = useRef(null);
@@ -15,6 +16,7 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
   const [timerActive, setTimerActive] = useState(false);
   const alarmAudioRef = useRef(null);
   const [alarmPlaying, setAlarmPlaying] = useState(false);
+  const [format] = useState("mp3");
 
   const playCloudTTS = useCallback(async (text) => {
     try {
@@ -27,12 +29,20 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
-
-      const response = await fetchTTS(text, abortControllerRef.current);
+      const response = await fetchTTS(
+          text,
+          abortControllerRef.current,
+          character,
+          "wav"
+        );
       const data = await response.json();
       
       if (data.audioBase64) {
-        const blob = new Blob([Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))], { type: "audio/mp3" });
+        const mime = "wav" === "wav" ? "audio/wav" : "audio/mp3";
+        const blob = new Blob(
+          [Uint8Array.from(atob(data.audioBase64), c => c.charCodeAt(0))],
+          { type: mime }
+        );
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audioRef.current = audio;
@@ -41,7 +51,9 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
     } catch (err) {
       if (err.name !== "AbortError") console.error("TTS 오류:", err);
     }
-  }, []);
+  },
+ [character, format]
+);
 
   const handleAssistantAction = (data) => {
     if (!data || !data.action) return;
@@ -67,6 +79,7 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
         setTimer(null);
         setTimeLeft(0);
         setTimerActive(false);
+        timerActive(false);
         stopAlarm();
         break;
       case "response":
@@ -78,8 +91,12 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
   };
 
   const fetchAIResponse = async (question) => {
+    if (!character) {
+           alert("먼저 상단에서 캐릭터를 선택해주세요.");
+           return;
+         }
     try {
-      const response = await AIResponse(question, recipe);
+      const response = await AIResponse(question, recipe, character);
       const data = await response.json();
       handleAssistantAction(data);
     } catch (error) {
@@ -88,60 +105,86 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
   };
 
   const startListening = () => {
-    if (!recognitionRef.current && !isListening) {
-      // iOS Safari 지원을 위한 webkitSpeechRecognition 사용
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.error("음성 인식을 지원하지 않는 브라우저입니다.");
-        return;
-      }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.error("음성 인식을 지원하지 않는 브라우저입니다.");
+      return;
+    }
+  
+    // recognition 객체가 없으면 새로 생성
+    if (!recognitionRef.current) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.lang = "ko-KR";
-      recognitionRef.current.continuous = true; // 지속적인 음성 감지
-      recognitionRef.current.interimResults = false; // 중간 결과 미출력
-
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = false;
+  
+      // 이벤트 핸들러 등록
       recognitionRef.current.onstart = () => {
         console.log("🎙️ 음성 인식 시작됨...");
+        setIsListening(true);
         setIsAssistantOn(true);
       };
-      
+  
       recognitionRef.current.onresult = (event) => {
         const voiceText = event.results[event.results.length - 1][0].transcript.trim();
         console.log("음성 입력:", voiceText);
         fetchAIResponse(voiceText);
       };
-      
-
+  
       recognitionRef.current.onerror = (event) => {
         console.error("음성 인식 오류:", event.error);
         setIsListening(false);
       };
-
+  
       recognitionRef.current.onend = () => {
         console.log("음성 인식 종료됨");
         setIsListening(false);
-        if (isAssistantOn) setTimeout(() => recognitionRef.current.start(), 1000);
+  
+        // assistant가 켜져 있다면 자동 재시작
+        if (isAssistantOn) {
+          setTimeout(() => {
+            if (!isListening) {
+              try {
+                recognitionRef.current?.start();
+                setIsListening(true);
+              } catch (error) {
+                console.warn("음성 인식 재시작 실패:", error);
+              }
+            }
+          }, 1000);
+        }
       };
     }
+  
+    // 중복 실행 방지: isListening이 false일 때만 start 호출
+    if (!isListening) {
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        if (error.name === "InvalidStateError") {
+          console.warn("이미 음성 인식이 실행 중입니다.");
+        } else {
+          console.error("startListening 오류:", error);
+        }
+      }
+    }
+  };
+  
 
-    recognitionRef.current.start();
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setIsAssistantOn(false);
   };
 
   // AI 어시스턴트 버튼 클릭 시 ON/OFF
   const toggleAssistant = () => {
     if (isAssistantOn) {
-      recognitionRef.current?.stop();
-      setIsAssistantOn(false);
+      stopListening();
       setIsListening(false);
     } else {
       startListening();
       setIsAssistantOn(true);
     }
-  };
-
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setIsAssistantOn(false);
   };
 
   const setCookingTimer = (seconds) => {
@@ -162,35 +205,24 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
     setTimerActive(false);
   };
 
-  const playAlarm = () => {
-    const audio = new Audio('/alarm.mp3'); // 혹은 public 경로에 있는 사운드 파일 경로
-    audio.play();
-  }
-  
-
-
-  useEffect(() => {
-    if (timeLeft > 0) {
-      const id = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
-      return () => clearTimeout(id);
-    } else if (timeLeft === 0 && timer !== null && !alarmPlaying) {
-      alarmAudioRef.current = new Audio("/alarm.mp3");
-      alarmAudioRef.current.loop = true;
-      alarmAudioRef.current.play();
-      setAlarmPlaying(true);
-    }
-  }, [timeLeft, timer, alarmPlaying]);
-
   useEffect(() => {
     return () => {
-      recognitionRef.current?.stop();
-      audioRef.current?.pause();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, []);
 
   useEffect(() => {
-    if (recipe && recipe.instructions[currentStep]) {
-      playCloudTTS(recipe.instructions[currentStep]);
+    if (!recipe || !recipe.instructions) return;
+
+    const currentText = recipe.instructions[currentStep];
+    if (currentText) {
+      playCloudTTS(currentText);
     }
   }, [currentStep, recipe, playCloudTTS]);
 
@@ -198,13 +230,19 @@ function CookingAssistant({ recipe, currentStep, setCurrentStep }) {
   return (
     <div style={{ marginTop: "30px" }}>
       <button
-        onClick={toggleAssistant ? stopListening : startListening}
+        onClick={toggleAssistant}
         style={{ marginTop: "20px", padding: "10px 15px", fontSize: "1rem", backgroundColor: isAssistantOn ? "red" : "#4CAF50", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" }}
       >
         {isAssistantOn ? "AI 어시스턴트 끄기" : "AI 어시스턴트 켜기"}
       </button>
-      
-      <CircularTimer initialTime={timeLeft} onComplete={() => playAlarm()} />
+      {timerActive && (
+        <CircularTimer
+          timeLeft={timeLeft}
+          isRunning={isAssistantOn}
+          initialTime={timer}
+          onStop={() => {setTimerActive(false); stopAlarm();}}
+        />
+      )}
     </div>
   );
 }

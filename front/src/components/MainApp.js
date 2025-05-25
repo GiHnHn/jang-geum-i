@@ -5,6 +5,21 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
 import axios from "axios";
 import RecipeDisplay from "./RecipeDisplay";
+import { useCharacter } from "../contexts/CharacterContext";
+
+
+const NAME_MAP = {
+  baek:  "빽AI",
+  seung: "3스타AI",
+  jang:  "장금이",
+};
+
+// id ↔ 이미지 경로 매핑
+const IMG_MAP = {
+  baek:  "/images/baek.png",
+  seung: "/images/seung.png",
+  jang:  "/images/jang.png",
+};
 
 const BACKEND_API_URL = "https://jang-geum-i-backend.onrender.com";
 
@@ -18,6 +33,9 @@ function MainApp({ user, setUser }) {
   const [searchHistory, setSearchHistory] = useState([]);
   const [searchResult, setSearchResult] = useState(null);
   const navigate = useNavigate();
+  const { character } = useCharacter();
+  const displayName = NAME_MAP[character] || "";
+  const avatarSrc = IMG_MAP[character] || "";
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
   const SUPPORTED_FILE_TYPES = ["image/jpeg", "image/png", "image/gif"];
@@ -135,11 +153,7 @@ function MainApp({ user, setUser }) {
 
   const fetchSearchHistory = async () => {
     try {
-      const token = await user.getIdToken();
-      const response = await axios.get(`${BACKEND_API_URL}/api/recipes/search-history`,{
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }, withCredentials: true });
+      const response = await axios.get(`${BACKEND_API_URL}/api/recipes/search-history`, { withCredentials: true });
       if (response.data?.history) setSearchHistory(response.data.history);
     } catch (error) {
       console.error("🚨 검색 기록 불러오기 실패:", error);
@@ -168,7 +182,6 @@ function MainApp({ user, setUser }) {
 
 
   return (
-    
     <div
       style={{
         fontFamily: "Arial, sans-serif",
@@ -179,23 +192,50 @@ function MainApp({ user, setUser }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+  
+        /* ← 이 gap 값만 수정하세요 */
+        gap: "8px",  // 이미지↔텍스트↔검색창 간격을 16px로 통일
+  
         padding: "20px",
       }}
     >
-      <h1 style={{ fontSize: "3rem", color: "#4CAF50", marginBottom: "20px" }}>
-        장금이
+      {/* 1. 아바타(이미지) */}
+      {avatarSrc && (
+        <img
+          src={avatarSrc}
+          alt={displayName}
+          style={{
+            width: "250px",
+            height: "250px",
+            borderRadius: "20px",
+            margin: 0,  // 개별 마진 제거
+          }}
+        />
+      )}
+  
+      {/* 2. 제목(텍스트) */}
+      <h1
+        style={{
+          fontSize: "3rem",
+          color: "#4CAF50",
+          margin: 0,  // 기본 h1 마진 제거
+        }}
+      >
+        {displayName}
       </h1>
+  
+      {/* 3. 검색창 */}
       <div
         style={{
           width: "100%",
           maxWidth: "400px",
           padding: "15px",
-          backgroundColor: "#f9f9f9",
+          backgroundColor: "#fff",
           borderRadius: "10px",
           textAlign: "center",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          marginBottom: "20px",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           border: "1px solid #ddd",
+          margin: 0,  // 개별 마진 제거
         }}
       >
         <input
@@ -388,21 +428,6 @@ function MainApp({ user, setUser }) {
                   }}
                   onClick={() => handleRecipeClick(entry.recipe)}
                 >
-                {/* ✅ 이미지가 있을 경우 썸네일처럼 표시 */}
-                {entry.imageUrl && (
-                  <img
-                    src={entry.imageUrl}
-                    alt="thumbnail"
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      objectFit: "cover",
-                      borderRadius: "5px",
-                      marginRight: "10px"
-                    }}
-                  />
-                )}
-                
                   {entry.query} - {entry.recipe.dish}
                 </li>
               ))
