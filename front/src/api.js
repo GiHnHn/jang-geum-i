@@ -61,3 +61,14 @@ export const fetchTTS = async (text, abortController) => {
     signal: abortController?.signal, // ✅ AbortController 지원 추가
   });
 };
+
+// n8n webhook 전송
+export const sendTestCommand = async (command) => {
+  return await axios.post(
+    `${BACKEND_API_URL}/api/n8n`,
+    { command },
+    {
+      withCredentials: true, // ✅ 쿠키 포함 요청
+    }
+  );
+};

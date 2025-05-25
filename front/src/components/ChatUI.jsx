@@ -99,11 +99,16 @@ export default function ChatUI() {
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
 
-    // TODO: 실제 API 호출로 교체
-    setTimeout(() => {
-      const aiReply = { isUser: false, text: `🤖 ${userMsg.text}` };
+    // n8n API 호출
+    try {
+      const response = await sendTestCommand(userMsg.text); // ✅ 서버 → n8n 호출
+      const aiReply = { isUser: false, text: response.data?.message || "응답 없음" };
       setMessages(prev => [...prev, aiReply]);
-    }, 500);
+    } catch (error) {
+      console.error("n8n 호출 실패:", error);
+      const errorMsg = { isUser: false, text: "⚠️ 오류가 발생했어요. 다시 시도해 주세요." };
+      setMessages(prev => [...prev, errorMsg]);
+    }
   };
 
   const handleSubmit = e => {
