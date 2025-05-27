@@ -58,9 +58,7 @@ if (!JWT_SECRET) {
 const allowedOrigins = [
     'https://jang-geum-i-front.web.app',
     'https://jang-geum-i-front.firebaseapp.com',
-    'http://localhost:3000',
-    'https://n8n-service-4xc5.onrender.com/webhook/fortest',
-    'https://n8n-service-4xc5.onrender.com'
+    'http://localhost:3000'
 ];
 
 app.use(cors({
@@ -263,7 +261,7 @@ app.post('/upload', async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘. 그리고 요리 순서의 마지막 단계의 끝에 '맛있게 드세요.'를 붙여줘."
+                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투(예: 로 반환해줘. 그리고 요리 순서의 마지막 단계의 끝에 '맛있게 드세요.'를 붙여줘."
                         },
                         {
                             role: "user",
@@ -752,6 +750,7 @@ app.post("/api/test-command", async (req, res) => {
       res.status(500).send("Webhook 호출 실패");
     }
   });
+
 
 
 const PORT = process.env.PORT || 5000;
