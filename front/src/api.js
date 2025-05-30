@@ -1,6 +1,7 @@
 // api.js
 import axios from "axios";
 
+
 const BACKEND_API_URL = "https://jang-geum-i-backend.onrender.com"; // 백엔드 URL
 
 // 사용자 로그인 요청
@@ -45,28 +46,45 @@ export const submitTasteEvaluation = async (evaluationData) => {
 };
 
 // AI 어시스턴트 요청
-export const AIResponse = async (question, recipe) => {
-  return fetch(`${BACKEND_API_URL}/assistant`, {
+/**
+ * AI 어시스턴트 요청
+ * @param {string} question  – 유저 질문
+ * @param {object} recipe    – 현재 레시피 데이터
+ * @param {string} character – 선택된 캐릭터 ID
+ */
+export const AIResponse = async (question, recipe, character) => {
+  const base = BACKEND_API_URL;
+  return fetch(`${base}/assistant`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ question, recipe }),
   });
 };
 
-export const fetchTTS = async (text, abortController) => {
-  return await fetch(`${BACKEND_API_URL}/tts`, {
+/**
+ * TTS 요청
+ * @param {string} text         – TTS로 변환할 텍스트
+ * @param {string} character    – 선택된 캐릭터 ID
+ * @param {AbortController} abortController
+ */
+
+export const fetchTTS = async (text, abortController, character, format = "mp3") => {
+  const base = BACKEND_API_URL;
+  return fetch(`${base}/tts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-    signal: abortController?.signal, // ✅ AbortController 지원 추가
+    credentials: "include",
+    signal: abortController?.signal,
+    body: JSON.stringify({ text, format, character }),  // ← format 필드 추가
   });
 };
 
 // n8n webhook 전송
-export const sendTestCommand = async (command) => {
+export const sendTestCommand = async (sessionId, character, command) => {
   return await axios.post(
-    `${BACKEND_API_URL}/api/n8n`,
-    { command },
+    `${BACKEND_API_URL}/api/test-command`,
+    {  sessionId, character, command },
     {
       withCredentials: true, // ✅ 쿠키 포함 요청
     }
