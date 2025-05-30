@@ -46,7 +46,7 @@ export default function SelectRolePage() {
 
       <div style={{ marginTop: "2rem" }}>
         <button
-          onClick={() => navigate("/chat")}
+          onClick={handleStartChat}
           style={{
             padding: "12px 24px",
             marginRight: "1rem",
@@ -61,7 +61,7 @@ export default function SelectRolePage() {
         </button>
 
         <button
-          onClick={handleStartChat}
+          onClick={() => navigate("/recipe-search")}
           style={{
             padding: "12px 24px",
             backgroundColor: "#a7f3d0",
