@@ -89,7 +89,7 @@ const styles = {
   
 export default function ChatUI() {
   const { character } = useCharacter();
-  const sessionId = crypto.randomUUID(); // 채팅창 세션값 랜덤 생성
+  const sessionId = useRef(crypto.randomUUID()); // 채팅창 세션값 랜덤 생성
   const avatarSrc = IMG_MAP[character] || '/character.png';
 
   // 캐릭터별 시작 멘트 가져오기
