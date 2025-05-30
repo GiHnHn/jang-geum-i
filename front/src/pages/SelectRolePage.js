@@ -28,6 +28,11 @@ export default function SelectRolePage() {
   const displayName = NAME_MAP[character] || "AI";
   const avatarSrc = IMG_MAP[character] || "/character.png";
 
+  const handleStartChat = () => {
+    const sessionId = crypto.randomUUID(); // ✅ 세션 ID 생성
+    navigate("/chat", { state: { sessionId } }); // ✅ 상태 전달
+  };
+
   return (
     <div style={{ textAlign: "center", padding: "2rem" }}>
       <img
@@ -56,7 +61,7 @@ export default function SelectRolePage() {
         </button>
 
         <button
-          onClick={() => navigate("/recipe-search")}
+          onClick={handleStartChat}
           style={{
             padding: "12px 24px",
             backgroundColor: "#a7f3d0",
