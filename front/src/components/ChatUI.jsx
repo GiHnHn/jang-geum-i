@@ -1,11 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useCharacter } from '../contexts/CharacterContext';
+import { sendTestCommand } from "../api";
 
 // 캐릭터 ID에 따른 이미지 경로 매핑
 const IMG_MAP = {
   baek: '/images/baek.png',
   seung: '/images/seung.png',
   jang: '/images/jang.png',
+};
+
+// 캐릭터별 시작 멘트 매핑
+const GREETING_MAP = {
+  baek: '안녕하세유~ 빽AI예유. 필요한게 뭐유?',
+  seung: '안녕하세요. 3스타AI입니다. 필요한게 있으면 편하게 말씀하세요.',
+  jang: '안녕하십니까. 장금이이옵니다. 필요한 것이 있으면 도움을 드리겠사옵니다.',
 };
 
 const styles = {
@@ -33,12 +41,12 @@ const styles = {
     justifyContent: 'flex-end',
   },
   bubble: {
-    maxWidth: '300px',         // 최대 너비 제한 설정
+    maxWidth: '300px',
     padding: '12px',
     borderRadius: '12px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    whiteSpace: 'normal',      // 텍스트 줄바꿈 허용
-    wordBreak: 'break-word',   // 단어 단위 줄바꿈
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
     backgroundClip: 'padding-box',
   },
   ai: {
@@ -81,8 +89,11 @@ export default function ChatUI() {
   const { character } = useCharacter();
   const avatarSrc = IMG_MAP[character] || '/character.png';
 
+  // 캐릭터별 시작 멘트 가져오기
+  const initialGreeting = GREETING_MAP[character] || '안녕하세요! 무엇을 도와드릴까요?';
+
   const [messages, setMessages] = useState([
-    { isUser: false, text: '안녕하세유~ 빽AI예유. 궁금한게 뭐유?' },
+    { isUser: false, text: initialGreeting },
   ]);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
@@ -92,6 +103,28 @@ export default function ChatUI() {
   };
 
   useEffect(scrollToBottom, [messages]);
+
+  const formatHtml = (text) =>
+  text
+    // 1) 이미지 마크다운 ![alt](url) → <img>
+    .replace(
+      /!\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+      (_, alt, url) =>
+        `<img src="${url}" alt="${alt}" style="max-width:100%; margin:8px 0;" />`
+    )
+    // 2) 레이블 링크 [label](url) → <a>label</a>
+    .replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+      (_, label, url) =>
+        `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    )
+    // 3) 괄호 없이 그냥 남은 (https://…) → (<a>…</a>)
+    .replace(
+      /\((https?:\/\/[^)\s]+)\)/g,
+      (_, url) => `(<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>)`
+    )
+    // 4) 나머지 줄바꿈 → <br>
+    .replace(/\n/g, '<br>');
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -115,35 +148,41 @@ export default function ChatUI() {
     e.preventDefault();
     handleSend();
   };
+  
 
   return (
     <div style={styles.container}>
       <div style={styles.messages}>
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            style={{
-              ...styles.row,
-              ...(msg.isUser ? styles.right : styles.left),
-            }}
-          >
-            {!msg.isUser && (
-              <img
-                src={avatarSrc}
-                alt={character || 'AI'}
-                style={styles.character}
-              />
-            )}
-            <div
-              style={{
-                ...styles.bubble,
-                ...(msg.isUser ? styles.user : styles.ai),
-              }}
-            >
-              {msg.text}
+        {messages.map((msg, idx) => {
+          const rowStyle = {
+            ...styles.row,
+            ...(msg.isUser ? styles.right : styles.left),
+          };
+          const bubbleStyle = {
+            ...styles.bubble,
+            ...(msg.isUser ? styles.user : styles.ai),
+          };
+
+          // ─── AI 메시지일 때 ────────────────────────────────
+          if (!msg.isUser) {
+            return (
+              <div key={idx} style={rowStyle}>
+                <img src={avatarSrc} alt={character} style={styles.character} />
+                <div
+                  style={bubbleStyle}
+                  dangerouslySetInnerHTML={{ __html: formatHtml(msg.text) }}
+                />
+              </div>
+            );
+          }
+
+          // ─── 사용자 메시지일 때 ───────────────────────────
+          return (
+            <div key={idx} style={rowStyle}>
+              <div style={bubbleStyle}>{msg.text}</div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
