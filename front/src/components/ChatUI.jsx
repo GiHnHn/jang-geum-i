@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useCharacter } from '../contexts/CharacterContext';
 import { sendTestCommand } from "../api";
+import { useLocation } from "react-router-dom";
 
 // 캐릭터 ID에 따른 이미지 경로 매핑
 const IMG_MAP = {
@@ -89,7 +90,8 @@ const styles = {
   
 export default function ChatUI() {
   const { character } = useCharacter();
-  const sessionId = useRef(crypto.randomUUID()); // 채팅창 세션값 랜덤 생성
+  const location = useLocation();
+  const sessionId = location.state?.sessionId;
   const avatarSrc = IMG_MAP[character] || '/character.png';
 
   // 캐릭터별 시작 멘트 가져오기
