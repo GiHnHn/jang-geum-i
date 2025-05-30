@@ -731,18 +731,17 @@ app.post('/assistant', async (req, res) => {
     }
 });
 
-// ------------------------------------
-//  Webhook 테스트용 코드. 테스트 끝나면 삭제
-// ------------------------------------
+
 app.post("/api/test-command", async (req, res) => {
-    const { sessionId, command } = req.body;
+    const { sessionId, character, command } = req.body;
   
     try {
       const webhookUrl = "https://n8n-service-4xc5.onrender.com/webhook/fortest";
   
       const response = await axios.post(webhookUrl, {
-        input: command,
         ID: sessionId,
+        role : character,
+        input: command,
       });
   
       res.status(200).send(response.data); // 응답 텍스트 그대로 반환
