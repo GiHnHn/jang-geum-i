@@ -85,8 +85,11 @@ const styles = {
   },
 };
 
+
+  
 export default function ChatUI() {
   const { character } = useCharacter();
+  const sessionId = crypto.randomUUID(); // 채팅창 세션값 랜덤 생성
   const avatarSrc = IMG_MAP[character] || '/character.png';
 
   // 캐릭터별 시작 멘트 가져오기
@@ -134,7 +137,7 @@ export default function ChatUI() {
 
     // n8n API 호출
     try {
-      const response = await sendTestCommand(userMsg.text); // ✅ 서버 → n8n 호출
+      const response = await sendTestCommand(sessionId, character, userMsg.text); // ✅ 서버 → n8n 호출
       const aiReply = { isUser: false, text: response.data?.message || "응답 없음" };
       setMessages(prev => [...prev, aiReply]);
     } catch (error) {
