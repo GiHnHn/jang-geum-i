@@ -84,7 +84,11 @@ export const fetchTTS = async (text, abortController, character, format = "mp3")
 export const sendTestCommand = async (sessionId, character, command) => {
   return await axios.post(
     `${BACKEND_API_URL}/api/test-command`,
-    {  sessionId, character, command },
+    { 
+       sessionId: sessionId, 
+       character: character, 
+       command: command 
+      },
     {
       withCredentials: true, // ✅ 쿠키 포함 요청
     }
