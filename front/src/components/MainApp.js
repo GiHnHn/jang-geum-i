@@ -1,11 +1,11 @@
 // components/MainApp.js
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
 import axios from "axios";
 import RecipeDisplay from "./RecipeDisplay";
 import { useCharacter } from "../contexts/CharacterContext";
+import { useNavigate } from 'react-router-dom';
 
 
 const NAME_MAP = {
@@ -23,16 +23,15 @@ const IMG_MAP = {
 
 const BACKEND_API_URL = "https://jang-geum-i-backend.onrender.com";
 
-function MainApp({ user, setUser }) {
+function MainApp({ setUser }) {
+  const navigate = useNavigate();
   const [inputText, setInputText] = useState("");
   const [imageUrl, setImageUrl] = useState(null);
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [searchHistory, setSearchHistory] = useState([]);
   const [searchResult, setSearchResult] = useState(null);
-  const navigate = useNavigate();
+
   const { character } = useCharacter();
   const displayName = NAME_MAP[character] || "";
   const avatarSrc = IMG_MAP[character] || "";
@@ -63,7 +62,8 @@ function MainApp({ user, setUser }) {
 
   useEffect(() => {
     setUser(localStorage.getItem("username") || null);
-  }, []);
+  }, [setUser]);
+
 
   const handleUpload = async (file) => {
     setError(null);
@@ -119,20 +119,6 @@ function MainApp({ user, setUser }) {
     navigate("/purchase", { state: { recipe: result } });
   };
 
-  //로그아웃 기능
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${BACKEND_API_URL}/api/users/logout`, {}, { withCredentials: true });
-      localStorage.removeItem("username");
-      setUser?.(null);
-      setIsSidebarOpen(false);
-      alert("✅ 로그아웃 되었습니다.");
-      navigate("/");
-    } catch (error) {
-      console.error("🚨 로그아웃 실패:", error);
-    }
-  };
-
   const fetchNewRecipe = async () => {
     if (!inputText.trim()) return alert("검색어를 입력해주세요!");
     setError(null);
@@ -141,6 +127,7 @@ function MainApp({ user, setUser }) {
     setImageUrl(null);
     setStatus("extracting");
     setInputText("");
+    
 
     try {
       const response = await axios.post(`${BACKEND_API_URL}/upload`, { query: inputText }, { withCredentials: true });
@@ -150,36 +137,6 @@ function MainApp({ user, setUser }) {
       setStatus("idle");
     }
   };
-
-  const fetchSearchHistory = async () => {
-    try {
-      const response = await axios.get(`${BACKEND_API_URL}/api/recipes/search-history`, { withCredentials: true });
-      if (response.data?.history) setSearchHistory(response.data.history);
-    } catch (error) {
-      console.error("🚨 검색 기록 불러오기 실패:", error);
-    }
-  };
-
-   // ✅ 검색 기록 버튼 클릭 시 조회
-   const handleShowSearchHistory = () => {
-    fetchSearchHistory();
-  };
-
-  const handleRecipeClick = (recipe) => setSearchResult(recipe);
-
-  // ✅ 버튼 스타일 추가
-  const styles = {
-    authButton: {
-      padding: "8px 15px",
-      fontSize: "0.9rem",
-      backgroundColor: "#4CAF50",
-      color: "white",
-      borderRadius: "5px",
-      textDecoration: "none",
-      cursor: "pointer",
-    },
-  };
-
 
   return (
     <div
@@ -192,10 +149,7 @@ function MainApp({ user, setUser }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-  
-        /* ← 이 gap 값만 수정하세요 */
         gap: "8px",  // 이미지↔텍스트↔검색창 간격을 16px로 통일
-  
         padding: "20px",
       }}
     >
@@ -242,7 +196,7 @@ function MainApp({ user, setUser }) {
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="장금이에게 물어보세요!"
+          placeholder={`${displayName}에게 물어보세요!`}
           style={{
             width: "80%",
             maxWidth: "250px",
@@ -326,131 +280,6 @@ function MainApp({ user, setUser }) {
             }}
           />
         )}
-      </div>
-
-      {/* ✅ 사용자명이 있으면 우측 상단에 표시 */}
-      <div style={{ position: "absolute", top: "10px", right: "20px" }}>
-        {user ? (
-          <>
-            <span
-            style={{ fontWeight: "bold", color: "#4CAF50", cursor: "pointer" }}
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)} // 🔥 클릭하면 사이드바 토글
-          >
-            {user}님
-          </span>
-            <button onClick={handleLogout} style={styles.logoutButton}>로그아웃</button>
-          </>
-        ) : (
-          <div>
-            <Link to="/login" style={styles.authButton}>로그인</Link>
-            <Link to="/register" style={styles.authButton}>회원가입</Link>
-          </div>
-        )}
-      </div>
-
-      {/* ✅ 사이드바 (우측에서 슬라이드) */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          right: isSidebarOpen ? "0px" : "-300px", // 🔥 열릴 때 0px, 닫힐 때 -300px
-          width: "250px",
-          height: "100vh",
-          backgroundColor: "#fff",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-          transition: "right 0.3s ease-in-out",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        {/* ❌ 사이드바 닫기 버튼 */}
-        <button
-          onClick={() => setIsSidebarOpen(false)}
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "15px",
-            fontSize: "1.5rem",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "#888",
-          }}
-        >
-          ❌
-        </button>
-
-        <h2 style={{ color: "#4CAF50" }}>👤 사용자 정보</h2>
-        <p style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{user}</p>
-
-        <button
-          onClick={handleShowSearchHistory}
-          style={{
-            marginTop: "20px",
-            padding: "10px",
-            backgroundColor: "#007BFF",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          📜 이전 레시피 조회
-        </button>
-
-        {/* 🔥 🔥 🔥 검색 기록 리스트 (스크롤 추가됨) */}
-        <div
-          style={{
-            flex: 1, 
-            overflowY: "auto",  // ✅ 스크롤 가능하도록 설정
-            overflowX: "hidden",
-            maxHeight: "60vh",  // ✅ 검색 기록이 많으면 70% 높이까지만 표시
-            width: "100%", 
-            paddingRight: "5px", // ✅ 스크롤 바와 내용이 겹치지 않도록 여백 추가
-            marginTop: "10px",
-          }}
-        >
-          <ul style={{ width: "100%", padding: "10px", listStyle: "none" }}>
-            {searchHistory.length > 0 ? (
-              searchHistory.map((entry, index) => (
-                <li
-                  key={index}
-                  style={{
-                    padding: "10px",
-                    borderBottom: "1px solid #ddd",
-                    cursor: "pointer",
-                    color: "#333",
-                    whiteSpace: "nowrap", // ✅ 한 줄로 유지
-                    overflow: "hidden",
-                    textOverflow: "ellipsis", // ✅ 너무 길면 ...으로 표시
-                  }}
-                  onClick={() => handleRecipeClick(entry.recipe)}
-                >
-                  {entry.query} - {entry.recipe.dish}
-                </li>
-              ))
-            ) : (
-              <p style={{ color: "#666", marginTop: "10px" }}>이전 검색 기록이 없습니다.</p>
-            )}
-          </ul>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            marginTop: "20px",
-            padding: "10px 15px",
-            backgroundColor: "red",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          로그아웃
-        </button>
       </div>
 
       {searchResult && (
