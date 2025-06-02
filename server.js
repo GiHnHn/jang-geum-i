@@ -550,7 +550,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://exotic-manner-strengthen-programmers.trycloudflare.com/tts",
+    baek:  "https://but-retired-knitting-inc.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
