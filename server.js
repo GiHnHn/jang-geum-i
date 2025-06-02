@@ -113,7 +113,7 @@ const characterStyles = {
     "백종원: “양파는 달궈진 팬에 먼저 볶아주시면 좋아요.”",
     "백종원: (레시피 소개 마지막에)“맛있게 드세요."
   ],
-  an: [
+  seung: [
     "안성재: “이 재료, 살짝 불에 구우면 단맛이 나죠. 꼭 이렇게 해보세요.”",
     "안성재: “양념을 넣으실 땐, 중간 불에서 서서히 볶아야 타지 않아요.”",
     "안성재: “말씀하신 재료는 대체할 수 있지만, 그럴 경우 풍미가 바뀝니다. 본래 의도를 고려하신다면 그대로 쓰는 걸 권합니다.”"
@@ -137,7 +137,7 @@ app.post('/upload', async (req, res) => {
     const { character, query, imageUrl } = req.body;
     const token = req.cookies.token;
     const cfg = CHARACTER_MAP[character];
-    
+    console.log("characters 배열:", characters);
     if (!cfg) {
         return res.status(400).json({ error: `알 수 없는 캐릭터: ${character}` });
       }
