@@ -568,6 +568,13 @@ app.post('/assistant', async (req, res) => {
         return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
     }
 
+    // JSON 코드블록이 감싸져 있을 경우 추출하는 함수
+    function extractJsonBlock(text) {
+        const match = text.match(/```json\s*([\s\S]*?)\s*```/i);
+        if (match) return match[1];
+        return text;
+    }
+
     try {
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -578,30 +585,59 @@ app.post('/assistant', async (req, res) => {
                     현재 요리는 "${recipe.dish}"야. 
                     재료 목록: ${recipe.ingredients.map(i => `${i.name} ${i.quantity}`).join(", ")}
                     조리법: ${recipe.instructions.join(" / ")} 
-
+                    
                     사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
-                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해. 반드시 아래 형식의 JSON으로 응답해:
+                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해.
 
-                    {
-                    "action": "next_step" | "prev_step" | "repeat_step" | "set_timer" | "cancel_timer" | "navigate_home" | "response",
-                    "answer": "사용자에게 보여줄 텍스트",
-                    "time": (선택 사항: 초 단위 숫자)
-                    }`
+                    **가능한 액션 목록:**
+                    - next_step: 다음 조리 단계로 이동
+                    - prev_step: 이전 조리 단계로 이동
+                    - repeat_step: 현재 단계를 다시 안내
+                    - set_timer: 타이머 설정 (예: "5분 타이머 맞춰줘" 또는 "30초 타이머 맞춰줘")
+                    - cancel_timer: 타이머 취소
+                    - navigate_home: 홈 화면으로 이동
+                    - response: 질문에 대한 응답 제공
+
+                    반드시 JSON만 응답해. 코드블럭(\`\`\`json) 없이 순수 JSON 형식만 제공해.`,
                 },
                 { role: "user", content: question }
             ],
         });
 
-        const gptReply = aiResponse.choices[0]?.message?.content || "{}";
+        const gptReplyRaw = aiResponse.choices[0]?.message?.content || "{}";
+        const gptReply = extractJsonBlock(gptReplyRaw);
+
         let actionData;
 
-        // ✅ JSON 파싱 시도
         try {
-            actionData = JSON.parse(gptReply);
-            if (!actionData.action) throw new Error("Invalid format");
-        } catch (err) {
-            console.warn("⚠️ GPT 응답 JSON 파싱 실패. fallback 사용:", gptReply);
-            actionData = { action: "response", answer: gptReply };
+            const parsed = JSON.parse(gptReply);
+            if (parsed && parsed.action) {
+                actionData = parsed;
+            } else {
+                throw new Error("invalid action");
+            }
+        } catch {
+            // 기존 방식 fallback
+            actionData = { action: "response", answer: gptReplyRaw };
+
+            if (gptReplyRaw.includes("다음 단계")) {
+                actionData = { action: "next_step" };
+            } else if (gptReplyRaw.includes("이전 단계")) {
+                actionData = { action: "prev_step" };
+            } else if (gptReplyRaw.includes("다시 설명")) {
+                actionData = { action: "repeat_step" };
+            } else if (gptReplyRaw.includes("타이머")) {
+                const timeMatch = gptReplyRaw.match(/(\d+)(초|분)/);
+                if (timeMatch) {
+                    const timeValue = parseInt(timeMatch[1], 10);
+                    const timeInSeconds = timeMatch[2] === "분" ? timeValue * 60 : timeValue;
+                    actionData = { action: "set_timer", time: timeInSeconds };
+                }
+            } else if (gptReplyRaw.includes("타이머 취소")) {
+                actionData = { action: "cancel_timer" };
+            } else if (gptReplyRaw.includes("홈 화면")) {
+                actionData = { action: "navigate_home" };
+            }
         }
 
         // 쿠키 설정
@@ -617,6 +653,7 @@ app.post('/assistant', async (req, res) => {
         res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
     }
 });
+
 
 
 app.post("/api/test-command", async (req, res) => {
