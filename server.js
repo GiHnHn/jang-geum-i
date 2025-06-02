@@ -581,7 +581,7 @@ app.post('/assistant', async (req, res) => {
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content: systemContent.trim() },
+                { role: "system", content:  },
                 {
                     role: "system",
                     content: `사용자가 요리하는 동안 도와주는 역할을 해. 
@@ -590,7 +590,7 @@ app.post('/assistant', async (req, res) => {
                     조리법: ${recipe.instructions.join(" / ")} 
                     
                     사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
-                    필요한 정보를 제공할 때는 백종원 말투와 존댓말로 부탁해.
+                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해.
 
                     **가능한 액션 목록:**
                     - next_step: 다음 조리 단계로 이동
