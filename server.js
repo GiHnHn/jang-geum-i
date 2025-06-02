@@ -136,8 +136,11 @@ const characterStyles = {
 app.post('/upload', async (req, res) => {
     const { character, query, imageUrl } = req.body;
     const token = req.cookies.token;
+    const cfg = CHARACTER_MAP[character];
     console.log("characters 배열:", characters);
-    
+    if (!cfg) {
+        return res.status(400).json({ error: `알 수 없는 캐릭터: ${character}` });
+      }
 
       
 
@@ -147,9 +150,9 @@ app.post('/upload', async (req, res) => {
     console.log("🟢 [DEBUG] 쿠키 정보:", req.cookies); // 쿠키 로그 출력
 
     let systemContent = `
-    너는 다양한 한식 요리의 레시피를 알고 있는 전문가 ${character === "baek" ? "백종원" : character === "an" ? "안성재" : "장금이"}야.
+    너는 다양한 한식 요리의 레시피를 알고 있는 전문가 ${character === "baek" ? "백종원" : character === "seung" ? "안성재" : "장금이"}야.
     요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해.
-    조리법은 ${character === "baek" ? "백종원 말투" : character === "an" ? "안성재 말투" : "장금이 사극체 말투"}로 작성해줘.
+    조리법은 ${character === "baek" ? "백종원 말투" : character === "seung" ? "안성재 말투" : "장금이 사극체 말투"}로 작성해줘.
 
     --- 말투 예시 ---
     ${characterStyles[character].join("\n")}
