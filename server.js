@@ -107,6 +107,26 @@ const firebaseConfig = {
 initializeApp(firebaseConfig);
 const storage = getStorage();
 
+const characterStyles = {
+  baek: [
+    "백종원: “이제 다진 채소를 계란물에 넣고 다시 한번 잘 섞어주세요.”",
+    "백종원: “양파는 달궈진 팬에 먼저 볶아주시면 좋아요.”",
+    "백종원: (레시피 소개 마지막에)“맛있게 드세요."
+  ],
+  an: [
+    "안성재: “이 재료, 살짝 불에 구우면 단맛이 나죠. 꼭 이렇게 해보세요.”",
+    "안성재: “양념을 넣으실 땐, 중간 불에서 서서히 볶아야 타지 않아요.”",
+    "안성재: “말씀하신 재료는 대체할 수 있지만, 그럴 경우 풍미가 바뀝니다. 본래 의도를 고려하신다면 그대로 쓰는 걸 권합니다.”"
+    
+  ],
+  jang: [
+    "장금이(사극체): “간은 오로지 혀가 아니라 마음으로 맞추는 것이지요.”",
+    "장금이(사극체): “이 국물은 오래 끓일수록 진국이 되옵니다. 허나, 불의 세기를 살펴가며 은근히 우려내야 하옵지요.”",
+    "장금이(사극체): “소인이 아는 바로는, 소고기 장조림에는 홍고추를 함께 넣으면 맛이 깔끔해진다 하옵니다.”"
+  ]
+};
+
+
 
 
 
@@ -129,37 +149,16 @@ app.post('/upload', async (req, res) => {
     console.log("🟢 [DEBUG] 요청 헤더:", req.headers); // 요청 헤더 로그 출력
     console.log("🟢 [DEBUG] 쿠키 정보:", req.cookies); // 쿠키 로그 출력
 
-    let rawText;
-    // try {
-        // JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
-        // if (token) {
-        //     try {
-        //         const decoded = jwt.verify(token, JWT_SECRET);
-        //         userId = decoded.id;
-        //         console.log("[INFO] 로그인된 사용자:", userId);
-        //     } catch (error) {
-        //         console.warn("유효하지 않은 토큰:", error.message);
-        //     }
-        // } else {
-        //     console.warn("[WARNING] 토큰이 없음 (로그인되지 않은 사용자)");
-        // }
+    let systemContent = `
+    너는 다양한 한식 요리의 레시피를 알고 있는 전문가 ${character === "baek" ? "백종원" : character === "an" ? "안성재" : "장금이"}야.
+    요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해.
+    조리법은 ${character === "baek" ? "백종원 말투" : character === "an" ? "안성재 말투" : "장금이 사극체 말투"}로 작성해줘.
 
-        // const prompt = [
-        //     `"백종원 스타일로 ${query}의 요리명, 재료, 요리순서를 알려줘."`,
-        //     `"답변은 항상 한 번만 해"`
-        //   ].join(' ');
-
-        //   const customRes = await axios.post(
-        //     cfg.url,
-        //     { prompt },                          // 
-        //     { headers: { 'Content-Type': 'application/json' } }
-        //   );
-
-        // rawText = customRes.data.response;
-        // } catch (e) {
-        //     console.error('커스텀 서버 호출 실패', e);
-        //     return res.status(500).json({ error: '외부 모델 응답을 가져오지 못했습니다.' });
-        // }
+    --- 말투 예시 ---
+    ${characterStyles[selectedCharacter].join("\n")}
+    `;
+    
+    
     try {
 
         // JWT 토큰이 있으면 사용자 ID 추출 (로그인된 사용자만)
@@ -183,10 +182,7 @@ app.post('/upload', async (req, res) => {
                 openAiResponse = await openai.chat.completions.create({
                     model: "gpt-4o",
                     messages: [
-                        {
-                            role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투로 반환해줘. 그리고 요리 순서의 마지막 단계의 끝에 '맛있게 드세요.'를 붙여줘."
-                        },
+                        { role: "system", content: systemContent.trim() },
                         {
                             role: "user",
                             content: [
@@ -259,10 +255,7 @@ app.post('/upload', async (req, res) => {
                 openAiResponse = await openai.chat.completions.create({
                     model: "gpt-4o",
                     messages: [
-                        {
-                            role: "system",
-                            content: "너는 다양한 한식 요리의 레시피를 알고있는 전문가 백종원이야. 요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해. 조리법은 백종원 말투(예: 로 반환해줘. 그리고 요리 순서의 마지막 단계의 끝에 '맛있게 드세요.'를 붙여줘."
-                        },
+                        { role: "system", content: systemContent.trim() },
                         {
                             role: "user",
                             content: [
@@ -331,85 +324,6 @@ app.post('/upload', async (req, res) => {
                 return res.status(500).json({ error: 'Failed to fetch data from OpenAI API.' });
             }
         }
-
-        // let jsonifyRes;
-        //     try {
-        //         jsonifyRes = await openai.chat.completions.create({
-        //         model: 'gpt-4o',
-        //         messages: [
-        //             {
-        //             role: 'system',
-        //             content: `요리 순서 부분에 있는 문장에서 단위같은 부분들을 일상생활에서 활용하기 쉬운 예시로 바꿔줘. 예를들어 0.4cm는 잘게 이런 느낌으로. 근데 말투는 유지해줘야해. 그리고 "강불"은 "쌘불", "여기서 멸치다시다 좀 넣으면 더 진한 맛이 나요~"는 "다시다 넣으면 더 맛있어요. 국물맛이 더 찐해져요." 이런식으로 바꿔줘. 그리고 설명의 질은 유지하는데, 요리 순서의 갯수가 늘어나도 괜찮으니까 좀 더 간결한 문장으로 만들어줘. 요리순서 중 마지막 단계의 끝 부분에는 맛있게 드세요.를 추가해줘. 그 후에 텍스트를 아래와 같은 엄격한 JSON 스키마에 맞춰 변환해줘.
-        //                         스키마:  
-        //                         {  
-        //                         "dish_name": string,  
-        //                         "ingredients": [ { "name": string, "quantity": string } ],  
-        //                         "instructions": [ string ]  
-        //                         }`
-                                
-        //             },
-        //             {
-        //             role: 'user',
-        //             content: openAiResponse
-        //             }
-        //         ],
-        //         response_format: {
-        //                             "type": "json_schema",
-        //                             "json_schema": {
-        //                                 "name": "recipe",
-        //                                 "strict": true,
-        //                                 "schema": {
-        //                                     "type": "object",
-        //                                     "properties": {
-        //                                         "dish_name": {
-        //                                             "type": "string",
-        //                                             "description": "요리의 이름을 나타냅니다."
-        //                                         },
-        //                                         "ingredients": {
-        //                                             "type": "array",
-        //                                             "description": "요리에 필요한 재료 목록입니다.",
-        //                                             "items": {
-        //                                                 "type": "object",
-        //                                                 "properties": {
-        //                                                     "name": {
-        //                                                         "type": "string",
-        //                                                         "description": "재료의 이름입니다."
-        //                                                     },
-        //                                                     "quantity": {
-        //                                                         "type": "string",
-        //                                                         "description": "재료의 양(g 단위)입니다."
-        //                                                     }
-        //                                                 },
-        //                                                 "required": [
-        //                                                     "name",
-        //                                                     "quantity"
-        //                                                 ],
-        //                                                 "additionalProperties": false
-        //                                             }
-        //                                         },
-        //                                         "instructions": {
-        //                                             "type": "array",
-        //                                             "description": "조리법 단계별 목록입니다.",
-        //                                             "items": {
-        //                                                 "type": "string",
-        //                                                 "description": "조리법의 각 단계 (문장 형식)."
-        //                                             }
-        //                                         }
-        //                                     },
-        //                                     "required": [
-        //                                         "dish_name",
-        //                                         "ingredients",
-        //                                         "instructions"
-        //                                     ],
-        //                                     "additionalProperties": false
-        //                                 }
-        //                             }
-        //                         }
-        //         });
-        //     } catch (e) {
-        //         console.error('OpenAI 변환 요청 실패', e);
-        //         return res.status(500).json({ error: 'JSON 변환에 실패했습니다.' });
-        //     }
 
         // OpenAI로부터 반환된 데이터
         const jsonContent = openAiResponse.choices[0].message.content;
@@ -550,7 +464,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://but-retired-knitting-inc.trycloudflare.com/tts",
+    baek:  "https://foods-tall-seminar-juice.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
@@ -658,9 +572,10 @@ app.post('/assistant', async (req, res) => {
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
+                { role: "system", content: systemContent.trim() },
                 {
                     role: "system",
-                    content: `너는 요리사 백종원이야. 사용자가 요리하는 동안 도와주는 역할을 해. 
+                    content: `사용자가 요리하는 동안 도와주는 역할을 해. 
                     현재 요리는 "${recipe.dish}"야. 
                     재료 목록: ${recipe.ingredients.map(i => `${i.name} ${i.quantity}`).join(", ")}
                     조리법: ${recipe.instructions.join(" / ")} 
@@ -702,20 +617,6 @@ app.post('/assistant', async (req, res) => {
         } else if (gptReply.includes("홈 화면")) {
             actionData = { action: "navigate_home" };
         }
-
-        // if (actionData.action === "response") {
-        //     // 예: CHARACTER_MAP 에서 URL 가져오기
-        //     const cfg = CHARACTER_MAP[character];
-        //     const prompt = `"${question}?"`;  // 원하는 프롬프트로 조정
-      
-        //     const llmRes = await axios.post(
-        //       cfg.url,
-        //       { prompt },
-        //       { headers: { 'Content-Type': 'application/json' } }
-        //     );
-        //     // llm 서버 응답을 actionData.answer 에 덮어쓰기
-        //     actionData.answer = llmRes.data.response;
-        //   }
 
         //  쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
         res.cookie("assistant_active", "true", {
