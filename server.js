@@ -581,7 +581,6 @@ app.post('/assistant', async (req, res) => {
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content:  },
                 {
                     role: "system",
                     content: `사용자가 요리하는 동안 도와주는 역할을 해. 
