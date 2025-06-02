@@ -596,62 +596,92 @@ app.post('/assistant', async (req, res) => {
                     - set_timer: 타이머 설정 (예: "5분 타이머 맞춰줘" 또는 "30초 타이머 맞춰줘")
                     - cancel_timer: 타이머 취소
                     - navigate_home: 홈 화면으로 이동
-                    - response: 질문에 대한 응답 제공
+                    - response: 단순 질문(텍스트) 답변 제공
 
-                    반드시 JSON만 응답해. 코드블럭(\`\`\`json) 없이 순수 JSON 형식만 제공해.`,
-                },
-                { role: "user", content: question }
-            ],
-        });
+                    **Response JSON 예시 (단순 Q&A 형태):**
+                    \`\`\`json
+                    {
+                    "action": "response",
+                    "answer": "네, 마늘을 먼저 볶아야 풍미가 살아납니다~"
+                    }
+                    \`\`\`
 
-        const gptReplyRaw = aiResponse.choices[0]?.message?.content || "{}";
-        const gptReply = extractJsonBlock(gptReplyRaw);
+                    반드시 위 예시처럼 “action”과 “answer” 필드를 포함한 순수 JSON만 응답해.
+                    코드블럭(\`\`\`json\`) 없이, 오직 JSON 문자열만 보내야 합니다.`,
+        },
+        { role: "user", content: question }
+      ],
+    });
 
-        let actionData;
+    const gptReplyRaw = aiResponse.choices[0]?.message?.content || "{}";
+    const gptReply = extractJsonBlock(gptReplyRaw);
 
-        try {
-            const parsed = JSON.parse(gptReply);
-            if (parsed && parsed.action) {
-                actionData = parsed;
-            } else {
-                throw new Error("invalid action");
-            }
-        } catch {
-            // 기존 방식 fallback
-            actionData = { action: "response", answer: gptReplyRaw };
+    let actionData = { action: "response", answer: "" };
 
-            if (gptReplyRaw.includes("다음 단계")) {
-                actionData = { action: "next_step" };
-            } else if (gptReplyRaw.includes("이전 단계")) {
-                actionData = { action: "prev_step" };
-            } else if (gptReplyRaw.includes("다시 설명")) {
-                actionData = { action: "repeat_step" };
-            } else if (gptReplyRaw.includes("타이머")) {
-                const timeMatch = gptReplyRaw.match(/(\d+)(초|분)/);
-                if (timeMatch) {
-                    const timeValue = parseInt(timeMatch[1], 10);
-                    const timeInSeconds = timeMatch[2] === "분" ? timeValue * 60 : timeValue;
-                    actionData = { action: "set_timer", time: timeInSeconds };
-                }
-            } else if (gptReplyRaw.includes("타이머 취소")) {
-                actionData = { action: "cancel_timer" };
-            } else if (gptReplyRaw.includes("홈 화면")) {
-                actionData = { action: "navigate_home" };
-            }
+    try {
+      const parsed = JSON.parse(gptReply);
+
+      if (parsed && parsed.action) {
+        if (parsed.action === "response") {
+          const text = typeof parsed.answer === "string" && parsed.answer.trim() !== ""
+            ? parsed.answer.trim()
+            : gptReplyRaw.trim();
+          actionData = { action: "response", answer: text };
+        } else {
+          actionData = { action: parsed.action };
+          if (parsed.action === "set_timer" && parsed.time != null) {
+            actionData.time = parsed.time;
+          }
         }
+      } else {
+        throw new Error("invalid action");
+      }
+    } catch {
+      let fallback = { action: "response", answer: gptReplyRaw.trim() };
 
-        // 쿠키 설정
-        res.cookie("assistant_active", "true", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None",
-        });
+      if (gptReplyRaw.includes("다음 단계")) {
+        fallback = { action: "next_step" };
+      } else if (gptReplyRaw.includes("이전 단계")) {
+        fallback = { action: "prev_step" };
+      } else if (gptReplyRaw.includes("다시 설명")) {
+        fallback = { action: "repeat_step" };
+      } else if (gptReplyRaw.includes("타이머 취소")) {
+        fallback = { action: "cancel_timer" };
+      } else if (gptReplyRaw.includes("홈 화면")) {
+        fallback = { action: "navigate_home" };
+      } else if (gptReplyRaw.includes("타이머")) {
+        const complexMatch = gptReplyRaw.match(/(\d+)\s*분\s*(\d+)\s*초/);
+        if (complexMatch) {
+          const seconds = parseInt(complexMatch[1], 10) * 60 + parseInt(complexMatch[2], 10);
+          fallback = { action: "set_timer", time: seconds };
+        } else {
+          const timeMatch = gptReplyRaw.match(/(\d+)\s*(분|초)/);
+          if (timeMatch) {
+            const value = parseInt(timeMatch[1], 10);
+            const seconds = timeMatch[2] === "분" ? value * 60 : value;
+            fallback = { action: "set_timer", time: seconds };
+          }
+        }
+      }
 
-        res.json(actionData);
-    } catch (error) {
-        console.error("[ERROR] OpenAI 어시스턴트 실패:", error.message);
-        res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
+      actionData = fallback;
     }
+
+    res.cookie("assistant_active", "true", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: "None",
+    });
+
+    return res.json(actionData);
+  } catch (error) {
+    console.error(
+      "[ERROR] OpenAI 어시스턴트 실패:",
+      error.response?.status,
+      error.response?.data || error.message
+    );
+    return res.status(500).json({ error: "AI 어시스턴트 응답 실패." });
+  }
 });
 
 
