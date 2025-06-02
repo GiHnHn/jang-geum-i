@@ -561,13 +561,12 @@ app.post('/tts', async (req, res) => {
 // ------------------------------------
 //  새로운 AI 어시스턴트 엔드포인트 추가
 // ------------------------------------
-app.post('/assistant', async (req, res) => {
+pp.post('/assistant', async (req, res) => {
     const { question, recipe } = req.body;
 
     if (!question || !recipe) {
         return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
     }
-
 
     try {
         const aiResponse = await openai.chat.completions.create({
@@ -579,15 +578,15 @@ app.post('/assistant', async (req, res) => {
                     현재 요리는 "${recipe.dish}"야. 
                     재료 목록: ${recipe.ingredients.map(i => `${i.name} ${i.quantity}`).join(", ")}
                     조리법: ${recipe.instructions.join(" / ")} 
-                    
+
                     사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
-                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해. 또한, 반드시 아래 형식으로 JSON을 반환해:
+                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해. 반드시 아래 형식의 JSON으로 응답해:
 
                     {
                     "action": "next_step" | "prev_step" | "repeat_step" | "set_timer" | "cancel_timer" | "navigate_home" | "response",
-                    "answer": "사용자에게 보여줄 답변 텍스트",
-                    "time": (선택사항: 초 단위 숫자)
-                    }`,
+                    "answer": "사용자에게 보여줄 텍스트",
+                    "time": (선택 사항: 초 단위 숫자)
+                    }`
                 },
                 { role: "user", content: question }
             ],
@@ -596,35 +595,20 @@ app.post('/assistant', async (req, res) => {
         const gptReply = aiResponse.choices[0]?.message?.content || "{}";
         let actionData;
 
-        if (gptReply.includes("다음 단계")) {
-            actionData = { action: "next_step" };
-        } else if (gptReply.includes("이전 단계")) {
-            actionData = { action: "prev_step" };
-        } else if (gptReply.includes("다시 설명")) {
-            actionData = { action: "repeat_step" };
-        } else if (gptReply.includes("타이머 취소")) {
-            actionData = { action: "cancel_timer" };
-        } else if (gptReply.includes("홈 화면")) {
-            actionData = { action: "navigate_home" };
-        } else if (gptReply.includes("타이머")) {
-            const timeMatch = gptReply.match(/(\d+)(초|분)/);
-            if (timeMatch) {
-                const timeValue = parseInt(timeMatch[1], 10);
-                const timeInSeconds = timeMatch[2] === "분" ? timeValue * 60 : timeValue;
-                actionData = { action: "set_timer", time: timeInSeconds };
-            }
-        }
-
-        // ✅ fallback: 위 조건을 모두 만족하지 않으면 기본 응답으로 처리
-        if (!actionData) {
+        // ✅ JSON 파싱 시도
+        try {
+            actionData = JSON.parse(gptReply);
+            if (!actionData.action) throw new Error("Invalid format");
+        } catch (err) {
+            console.warn("⚠️ GPT 응답 JSON 파싱 실패. fallback 사용:", gptReply);
             actionData = { action: "response", answer: gptReply };
         }
 
-        //  쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
+        // 쿠키 설정
         res.cookie("assistant_active", "true", {
-            httpOnly: true,  // JS에서 접근 불가 (보안 강화)
-            secure: true,  // HTTPS에서만 전송 가능 (로컬 개발 시 false)
-            sameSite: "None",  // CORS 요청에서도 쿠키 전달 가능
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
         });
 
         res.json(actionData);
