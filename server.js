@@ -568,14 +568,6 @@ app.post('/assistant', async (req, res) => {
         return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
     }
 
-    let systemContent = `
-    너는 다양한 한식 요리의 레시피를 알고 있는 전문가 ${character === "baek" ? "백종원" : character === "an" ? "안성재" : "장금이"}야.
-    요리의 이름, 재료 목록, 그리고 조리법을 JSON 형식으로 반환해야 해.
-    조리법은 ${character === "baek" ? "백종원 말투" : character === "an" ? "안성재 말투" : "장금이 사극체 말투"}로 작성해줘.
-
-    --- 말투 예시 ---
-    ${characterStyles[character].join("\n")}
-    `;
 
     try {
         const aiResponse = await openai.chat.completions.create({
