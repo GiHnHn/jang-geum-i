@@ -464,7 +464,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://gun-buffalo-tools-ivory.trycloudflare.com/tts",
+    baek:  "https://firmware-bunch-researchers-tribute.trycloudflare.com/tts",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
