@@ -562,7 +562,7 @@ app.post('/tts', async (req, res) => {
 //  새로운 AI 어시스턴트 엔드포인트 추가
 // ------------------------------------
 app.post('/assistant', async (req, res) => {
-    const { question, recipe, character } = req.body;
+    const { question, recipe } = req.body;
 
     if (!question || !recipe) {
         return res.status(400).json({ error: "질문과 레시피 정보를 제공해야 합니다." });
@@ -581,23 +581,27 @@ app.post('/assistant', async (req, res) => {
                     조리법: ${recipe.instructions.join(" / ")} 
                     
                     사용자의 질문이나 명령을 분석해서 필요한 정보를 제공하거나 적절한 액션을 정해줘.
-                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해.
+                    필요한 정보를 제공할 때는 백종원의 말투와 존댓말로 부탁해. 또한, 반드시 아래 형식으로 JSON을 반환해:
 
-                    **가능한 액션 목록:**
-                    - next_step: 다음 조리 단계로 이동
-                    - prev_step: 이전 조리 단계로 이동
-                    - repeat_step: 현재 단계를 다시 안내
-                    - set_timer: 타이머 설정 (예: "5분 타이머 맞춰줘" 또는 "30초 타이머 맞춰줘")
-                    - cancel_timer: 타이머 취소
-                    - navigate_home: 홈 화면으로 이동
-                    - response: 질문에 대한 응답 제공`,
+                    {
+                    "action": "next_step" | "prev_step" | "repeat_step" | "set_timer" | "cancel_timer" | "navigate_home" | "response",
+                    "answer": "사용자에게 보여줄 답변 텍스트",
+                    "time": (선택사항: 초 단위 숫자)
+                    }`,
                 },
                 { role: "user", content: question }
             ],
         });
 
-        const gptReply = aiResponse.choices[0]?.message?.content || "죄송해요, 정확한 답변을 찾을 수 없어요.";
-        let actionData = { action: "response", answer: gptReply };
+        const raw = aiResponse.choices[0]?.message?.content || "{}";
+        let actionData;
+
+        try {
+            actionData = JSON.parse(raw);
+            if (!actionData.action) throw new Error("Missing action");
+        } catch {
+            actionData = { action: "response", answer: raw }; // fallback
+        }
 
         if (gptReply.includes("다음 단계")) {
             actionData = { action: "next_step" };
