@@ -136,11 +136,8 @@ const characterStyles = {
 app.post('/upload', async (req, res) => {
     const { character, query, imageUrl } = req.body;
     const token = req.cookies.token;
-    const cfg = CHARACTER_MAP[character];
     console.log("characters 배열:", characters);
-    if (!cfg) {
-        return res.status(400).json({ error: `알 수 없는 캐릭터: ${character}` });
-      }
+    
 
       
 
