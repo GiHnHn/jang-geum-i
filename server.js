@@ -561,7 +561,7 @@ app.post('/tts', async (req, res) => {
 // ------------------------------------
 //  새로운 AI 어시스턴트 엔드포인트 추가
 // ------------------------------------
-pp.post('/assistant', async (req, res) => {
+app.post('/assistant', async (req, res) => {
     const { question, recipe } = req.body;
 
     if (!question || !recipe) {
