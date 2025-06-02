@@ -594,6 +594,7 @@ app.post('/assistant', async (req, res) => {
         });
 
         const gptReply = aiResponse.choices[0]?.message?.content || "{}";
+        let actionData;
 
         if (gptReply.includes("다음 단계")) {
             actionData = { action: "next_step" };
@@ -601,6 +602,10 @@ app.post('/assistant', async (req, res) => {
             actionData = { action: "prev_step" };
         } else if (gptReply.includes("다시 설명")) {
             actionData = { action: "repeat_step" };
+        } else if (gptReply.includes("타이머 취소")) {
+            actionData = { action: "cancel_timer" };
+        } else if (gptReply.includes("홈 화면")) {
+            actionData = { action: "navigate_home" };
         } else if (gptReply.includes("타이머")) {
             const timeMatch = gptReply.match(/(\d+)(초|분)/);
             if (timeMatch) {
@@ -608,10 +613,11 @@ app.post('/assistant', async (req, res) => {
                 const timeInSeconds = timeMatch[2] === "분" ? timeValue * 60 : timeValue;
                 actionData = { action: "set_timer", time: timeInSeconds };
             }
-        } else if (gptReply.includes("타이머 취소")) {
-            actionData = { action: "cancel_timer" };
-        } else if (gptReply.includes("홈 화면")) {
-            actionData = { action: "navigate_home" };
+        }
+
+        // ✅ fallback: 위 조건을 모두 만족하지 않으면 기본 응답으로 처리
+        if (!actionData) {
+            actionData = { action: "response", answer: gptReply };
         }
 
         //  쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
