@@ -187,7 +187,7 @@ app.post('/upload', async (req, res) => {
                             role: "user",
                             content: [
                                 { type: "text", text: query },
-                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘." },
+                                { type: "text", text: "이 음식의 이름과 들어가는 재료의 양, 자세한 레시피를 한국어로 출력해줘. 만약 레시피가 입력으로 들어왔을 경우 최대한 바꾸지 않고 그대로 출력해줘." },
                             ],
                         }
                     ],
