@@ -603,25 +603,6 @@ app.post('/assistant', async (req, res) => {
             actionData = { action: "response", answer: raw }; // fallback
         }
 
-        if (gptReply.includes("다음 단계")) {
-            actionData = { action: "next_step" };
-        } else if (gptReply.includes("이전 단계")) {
-            actionData = { action: "prev_step" };
-        } else if (gptReply.includes("다시 설명")) {
-            actionData = { action: "repeat_step" };
-        } else if (gptReply.includes("타이머")) {
-            const timeMatch = gptReply.match(/(\d+)(초|분)/);
-            if (timeMatch) {
-                const timeValue = parseInt(timeMatch[1], 10);
-                const timeInSeconds = timeMatch[2] === "분" ? timeValue * 60 : timeValue;
-                actionData = { action: "set_timer", time: timeInSeconds };
-            }
-        } else if (gptReply.includes("타이머 취소")) {
-            actionData = { action: "cancel_timer" };
-        } else if (gptReply.includes("홈 화면")) {
-            actionData = { action: "navigate_home" };
-        }
-
         //  쿠키 설정 (이 쿠키는 AI 어시스턴트 활성화 상태를 저장하는 예제)
         res.cookie("assistant_active", "true", {
             httpOnly: true,  // JS에서 접근 불가 (보안 강화)
