@@ -464,7 +464,7 @@ app.get('/api/search', async (req, res) => {
 
 
 const TTS_SERVER_MAP = {
-    baek:  "https://swedish-sudden-scholarships-elegant.trycloudflare.com ",
+    baek:  "https://swedish-sudden-scholarships-elegant.trycloudflare.com",
     seung: "https://seung-tts.example.com/tts",
     jang:  "https://jang-tts.example.com/tts",
   };
